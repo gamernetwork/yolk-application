@@ -15,6 +15,8 @@ use yolk\Yolk;
 
 use yolk\contracts\app\Application;
 use yolk\contracts\app\Dispatcher;
+use yolk\contracts\app\Request;
+use yolk\contracts\app\Response;
 
 /**
  * Application is basically a front controller class that acts as a "root object".
@@ -57,7 +59,7 @@ class BaseApplication extends BaseDispatcher implements Application {
 		return $this($this->services['request']);
 	}
 
-	public function __invoke( $request = null ) {
+	public function __invoke( Request $request = null ) {
 		
 		try {
 
