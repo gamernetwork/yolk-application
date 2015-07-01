@@ -11,7 +11,7 @@
 
 namespace yolk\app;
 
-use yolk\contracts\app\Request;
+use yolk\contracts\app\Request as RequestInterface;
 
 class RequestHelper {
 
@@ -79,10 +79,10 @@ class RequestHelper {
 
 		$data = array();
 
-		if( $method == Request::METHOD_PUT )
+		if( $method == RequestInterface::METHOD_PUT )
 			parse_str(file_get_contents('php://input'), $data);
 
-		elseif( $method == Request::METHOD_POST )
+		elseif( $method == RequestInterface::METHOD_POST )
 			$data = $post;
 
 		return $data;
