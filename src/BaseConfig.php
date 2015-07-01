@@ -11,6 +11,7 @@
 
 namespace yolk\app;
 
+use yolk\contracts\app\Config;
 use yolk\contracts\support\Arrayable;
 
 /**
@@ -30,7 +31,7 @@ use yolk\contracts\support\Arrayable;
  * * 'logs.debug' will return the debug log definition
  *
  */
-class Config implements Arrayable {
+class BaseConfig implements Config, Arrayable {
    
 	/**
 	 * Store for configuration values.
