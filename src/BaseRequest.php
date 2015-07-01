@@ -111,7 +111,7 @@ class BaseRequest implements Request {
 	 */
 	protected $extra;
 
-	public static function createFromCGIGlobals() {
+	public static function createFromGlobals() {
 		return new static(
 			$_SERVER['REQUEST_METHOD'],
 			$_SERVER['REQUEST_URI'],
