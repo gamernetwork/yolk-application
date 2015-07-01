@@ -21,34 +21,32 @@ use yolk\contracts\app\Response;
 /**
  * Application is basically a front controller class that acts as a "root object".
  */
-class BaseApplication extends BaseDispatcher implements Application {
+abstract class BaseApplication extends BaseDispatcher implements Application {
 
 	/**
-	 * Location of the applicatin on disk.
+	 * Location of the application in the filesystem.
 	 * @var string
 	 */
 	protected $path;
 
 	/**
-	 * Application's namespace.
-	 * @var string
-	 */
-	protected $namespace;
-
-	/**
 	 * Dependency container object.
-	 * @var \yolk\core\Services
+	 * @var \yolk\app\ServiceContainer
 	 */
 	protected $services;
 
 	/**
 	 * Dependency container object.
-	 * @param string $path        application's filesystem location
-	 * @param string $namespace   the namespace used by the applications controllers, models, etc.
+	 * @var \yolk\contracts\app\Router
 	 */
-	public function __construct( $path, $namespace ) {
-		$this->path      = $path;
-		$this->namespace = $namespace;
+	protected $router;
+
+	/**
+	 * Dependency container object.
+	 * @param string $path        application's filesystem location
+	 */
+	public function __construct( $path ) {
+		$this->path = $path;
 	}
 
 	/**
@@ -213,26 +211,17 @@ class BaseApplication extends BaseDispatcher implements Application {
 
 	/**
 	 * Loads the services used by the application.
-	 * @param \yolk\core\Services  $services   an existing service container
-	 * @param string               $file       a file containing service definitions
+	 * @param \yolk\app\ServiceContainer  $container   an existing service container
 	 * @return $this
 	 */
-	protected function loadServices( $services = null, $file = '' )  {
+	protected function loadServices( ServiceContainer $container = null )  {
 
+		if( !$container )
+			$container = new Services();
 
-		if( !$services )
-			$services = new \yolk\core\Services();
+		require "{$this->path}/app/services.php";
 
-		require __DIR__. '/../services.php';
-
-
-		// default Yolk services
-		//$services = Yolk::loadServices($services);
-
-		// application-specific services
-		$file && require $file;
-
-		$this->services = $services;
+		$this->services = $container;
 
 		return $this;
 
@@ -262,11 +251,13 @@ class BaseApplication extends BaseDispatcher implements Application {
 	protected function loadRoutes( $file = '' ) {
 
 		if( !$file )
-			$file = "{$this->path}/routes.php";
+			$file = "{$this->path}/app/routes.php";
 
 		$router = $this->services['router'];
 
 		require $file;
+
+		$this->router = $router;
 
 		return $this;
 

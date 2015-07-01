@@ -17,7 +17,7 @@ use yolk\database\DSN;
  * Dependency injection container and factory for Yolk.
  * Resolves framework services and allows them to be swapped out as required.
  */
-class Services extends \Pimple\Container {
+class ServiceContainer extends \Pimple\Container {
 
 	/**
 	 * Gets a parameter or an object.
