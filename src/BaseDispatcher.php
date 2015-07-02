@@ -9,9 +9,9 @@
  * https://github.com/gamernetwork/yolk-application
  */
 
-namespace yolk\contracts\app;
+namespace yolk\app;
 
-use yolk\app\Request;
+use yolk\contracts\app\Request;
 
 abstract class BaseDispatcher implements Dispatcher {
 
