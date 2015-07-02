@@ -11,6 +11,7 @@
 
 namespace yolk\app;
 
+use yolk\contracts\app\Dispatcher;
 use yolk\contracts\app\Request;
 
 abstract class BaseDispatcher implements Dispatcher {
