@@ -21,7 +21,7 @@ abstract class BaseDispatcher implements Dispatcher {
 	 */
 	protected $services;
 
-	public function dispatch( Request $request )
+	public function dispatch( Request $request ) {
 
 		$config   = $this->services['config'];
 		$response = $this->services['response'];
