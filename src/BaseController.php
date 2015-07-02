@@ -26,7 +26,7 @@ abstract class BaseController {
 	 * Make sure we store the dependency container.
 	 * @param \yolk\core\Services $services    services available to the controller.
 	 */
-	public function __construct( \yolk\core\Services $services ) {
+	public function __construct( \yolk\app\ServiceContainer $services ) {
 		$this->services = $services;
 	}
 

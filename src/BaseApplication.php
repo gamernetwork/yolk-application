@@ -17,6 +17,7 @@ use yolk\contracts\app\Application;
 use yolk\contracts\app\Dispatcher;
 use yolk\contracts\app\Request;
 use yolk\contracts\app\Response;
+use yolk\contracts\profiler\Profiler;
 
 /**
  * Application is basically a front controller class that acts as a "root object".
@@ -30,23 +31,32 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 	protected $path;
 
 	/**
-	 * Dependency container object.
+	 * A service container instance.
 	 * @var \yolk\app\ServiceContainer
 	 */
 	protected $services;
 
 	/**
 	 * Dependency container object.
-	 * @var \yolk\contracts\app\Router
-	 */
-	protected $router;
-
-	/**
-	 * Dependency container object.
 	 * @param string $path        application's filesystem location
 	 */
 	public function __construct( $path ) {
-		$this->path = $path;
+
+		try {
+
+			parent::__construct();
+
+			$this->path = $path;
+
+			$this->loadServices();
+			$this->loadConfig();
+			$this->loadRoutes();
+
+		}
+		catch( \Exception $e ) {
+			$this->error($e);
+		}
+
 	}
 
 	/**
@@ -54,29 +64,24 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 	 * return \yolk\app\Response
 	 */
 	public function run() {
-		return $this($this->services['request']);
+		return $this();
 	}
 
 	public function __invoke( Request $request = null ) {
-		
+
 		try {
 
-			$this->init();
-			
-			// if we we're passed a request then grab one
-			if( !isset($request) )
-				$request = $this->services['request'];
+			$response = null;
+
+			// no request was specified so create one from the PHP super-globals
+			if( !$request )
+				$request = BaseRequest::createFromGlobals();
 
 			$response = $this->dispatch($request);
 
-			// convert strings to a 200 HTML response
-			if( is_string($response) ) {
-				$response = $this->stringToResponse($response);
-			}
-			// convert arrays to a 200 JSON response
-			elseif( is_array($response) ) {
-				$response = $this->arrayToResponse($response);
-			}
+			// if request contains flash messages and the response doesn't then we need to remove them
+			if( $request->messages() && !$response->cookie('YOLK_MESSAGES') )
+				$response->cookie('YOLK_MESSAGES', '', time() - 60);
 
 			// TODO: this should be inverted by injecting the profiler into the response object in services.php
 			$this->injectProfiler($response, $this->services['profiler']);
@@ -85,105 +90,59 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 
 		}
 		catch( \Exception $e ) {
-			$this->error($e)->send();
+			$context = [
+				'request'  => $request,
+				'response' => $response,
+			];
+			$this->error($e, $context);
 		}
 
 	}
 
-	/**
-	 * Load framework and application services and the application config file.
-	 * Process autoload section of config file (if any).
-	 * @return self
-	 */
-	public function init() {
+	public function dispatch( Request $request ) {
 
-		$this
-			->loadServices()
-			->loadConfig()
-			->loadRoutes();
+		$request->setUriPrefix($this->services['config']->get('paths.web'));
 
-		return $this;
+		return parent::dispatch($request, $this->services);
 
 	}
 
-	/**
-	 * Register a listener for the 'app.beforeController' event.
-	 * to continue or \yolk\app\Response to bypass routing with own response
-	 * @param callback  $callback
-	 * @returns self
-	 */
-	public function before( $callback ) {
-		$this->services['event-manager']->addListener('app.beforeController', $callback);
-		return $this;
-	}
+	protected function error( \Exception $error, $context = [] ) {
 
-	/**
-	 * Register a listener for the 'app.afterController' event.
-	 * @param callback  $callback
-	 * @returns self
-	 */
-	public function after( $callback ) {
-		$this->services['event-manager']->addListener('app.afterController', $callback);
-		return $this;
-	}
-
-	protected function error( $error, $context = array() ) {
-
-		$config = $this->services['config'];
-
-		// if this isn't a boring 404 then log it and if we're in debug mode then throw it to Yolk's exception handler
+		// if this isn't a 404 then log it and if we're in debug mode then throw it to Yolk's exception handler
 		if( !($error instanceof exceptions\NotFoundException) ) {
-			error_log(get_class($error). ': '. $error->getMessage(). ' ['. $error->getFile(). ':'. $error->getLine(). ']');
 			if( Yolk::isDebug() )
 				throw $error;
+			else
+				error_log(get_class($error). ': '. $error->getMessage(). ' ['. $error->getFile(). ':'. $error->getLine(). ']');
 		}
 
-		$response = new \yolk\app\Response();
+		// default to a 500 error
+		$code    = 500;
+		$message = 'Internal Server Error';
 
-		// instances of \yolk\app\Exception have an HTTP status code as their error code
+		// if it's an application error then use the code and message provided
 		if( $error instanceof Exception ) {
-			$response->status($error->getCode(), $error->getMessage());
-			$template = 'errors/'. $error->getCode();
-		}
-		// other errors should be 500s
-		else {
-			$response->status(500);
-			$template = 'errors/500';
+			$code    = $error->getCode();
+			$message = $error->getMessage();
 		}
 
-		$view = $this->services["view.twig"];
+		// send an appropriate header if we still can
+		if( !headers_sent() )
+			header("HTTP/1.1 {$code} {$message}");
 
-		$context['error']       = $error;
-		$context['config']      = $config->toArray();
-		$context['profiler']    = isset($this->services['profiler']) ? $this->services['profiler']->getData() : array();
-		$context['WEB_PATH']    = $config->get('paths.web');
-		$context['STATIC_PATH'] = $config->get('paths.static');
-
-		// do we have a template for this error?
-		if( $view->exists($template) ) {
-			$body = $view->render($template, $context);
-		}
-		// do we have a generic template?
-		elseif( $view->exists('errors/generic') ) {
-			$body = $view->render('errors/generic', $context);
-		}
-		// do we have a static error page?
-		elseif( file_exists($config->get('paths.view'). '/error.html') ) {
-			$body = file_get_contents($config->get('paths.view'). '/error.html');
-		}
-		// there's no application defined way to display the error so throw it to Yolk's exception handler
-		else {
+		// do we have a specific error page?
+		if( file_exists("{$this->path}/app/errors/{$code}.php") )
+			include "{$this->path}/app/errors/{$code}.php";
+		// otherwise
+		elseif( file_exists("{$this->path}/app/errors/generic.php") )
+			include "{$this->path}/app/errors/generic.php";
+		else
 			throw $error;
-		}
-
-		return $this->injectProfiler(
-			$response->body($body),
-			$this->services['profiler']
-		);
 
 	}
 
-	protected function injectProfiler( \yolk\app\Response $response, Profiler $profiler = null ) {
+	protected function injectProfiler( Response $response, Profiler $profiler = null ) {
 
 		if( !$profiler )
 			return $response;
@@ -211,55 +170,39 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 
 	/**
 	 * Loads the services used by the application.
-	 * @param \yolk\app\ServiceContainer  $container   an existing service container
-	 * @return $this
+	 * @return void
 	 */
-	protected function loadServices( ServiceContainer $container = null )  {
+	protected function loadServices()  {
 
-		if( !$container )
-			$container = new Services();
+		$container = new ServiceContainer();
 
 		require "{$this->path}/app/services.php";
 
 		$this->services = $container;
 
-		return $this;
-
 	}
 
 	/**
 	 * Loads the application's configuration settings.
-	 * @param string   $file   location of the config file
-	 * @return $this
+	 * @return void
 	 */
-	protected function loadConfig( $file = '' )  {
+	protected function loadConfig()  {
 
-		if( !$file )
-			$file = "{$this->path}/config/main.php";
-
-		$this->services['config']->load($file);
-
-		return $this;
+		$this->services['config']->load("{$this->path}/config/main.php");
 
 	}
 
 	/**
 	 * Loads the routes used by the application.
-	 * @param string   $file   location of the routes file
-	 * @return $this
+	 * @return void
 	 */
-	protected function loadRoutes( $file = '' ) {
-
-		if( !$file )
-			$file = "{$this->path}/app/routes.php";
+	protected function loadRoutes() {
 
 		$router = $this->services['router'];
 
-		require $file;
+		require "{$this->path}/app/routes.php";
 
 		$this->router = $router;
-
-		return $this;
 
 	}
 

@@ -165,6 +165,7 @@ class BaseRequest implements Request {
 		$this->country_code = '';
 		$this->continent    = '';
 		$this->extra        = [];
+		$this->uri_prefix   = [];
 
 		// do geo-ip stuff if we have a valid IP that isn't part of a private network
 		if( $this->ip ) {
@@ -174,8 +175,28 @@ class BaseRequest implements Request {
 
 	}
 
+	public function pushUriPrefix( $prefix ) {
+		$this->uri_prefix[] = $prefix;
+	}
+
+	public function popUriPrefix() {
+		return array_pop($this->uri_prefix);
+	}
+
+	/**
+	 * Override the internal URI prefix stack
+	 */
 	public function setUriPrefix( $prefix ) {
-		$this->uri_prefix = (string) $prefix;
+
+		$this->uri_prefix = [];
+
+		if( is_array($prefix) )
+			$this->uri_prefix = $prefix;
+		elseif( $prefix )
+			$this->uri_prefix = [$prefix];
+
+		return $this;
+
 	}
 
 	/**
@@ -191,10 +212,16 @@ class BaseRequest implements Request {
 	 * @return string
 	 */
 	public function uri() {
-		if( $this->uri == $this->uri_prefix )
+
+	 	// Turn URI prefix stack into a string by concatenating the stack
+	 	// elements and removing multiple/extraneous forward slashes
+		$uri_prefix = preg_replace('#/{2,}#', '/', implode('', $this->uri_prefix));
+
+		if( $this->uri == $uri_prefix )
 			return '/';
 		else
-			return preg_replace('/^'. preg_quote($this->uri_prefix, '/'). '/', '', $this->uri);
+			return preg_replace('/^'. preg_quote($uri_prefix, '/'). '/', '', $this->uri);
+
 	}
 
 	/**

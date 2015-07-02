@@ -32,48 +32,40 @@ class BaseModule extends BaseDispatcher implements Module {
 	protected $path;
 
 	/**
-	 * Service container object.
+	 * A service container instance.
 	 * @var \yolk\app\ServiceContainer
 	 */
 	protected $services;
 
-	/**
-	 * A router instance.
-	 * @var yolk\contracts\app\Router
-	 */
-	protected $router;
-
 	public function __construct( ServiceContainer $services ) {
 
 		$class = new \ReflectionClass($this);
-		$this->path = pathinfo($class->getFileName(), PATHINFO_DIRNAME);
+		$this->path      = pathinfo($class->getFileName(), PATHINFO_DIRNAME);
+		$this->namespace = $class->getNamespaceName();
 
 		$this->services = $services;
-		$this->router   = $services['router'];
-
-	}
-
-	/**
-	 * Load framework and application services and the application config file.
-	 * Process autoload section of config file (if any).
-	 * @return self
-	 */
-	public function init() {
 
 		$this->loadRoutes();
 
-		return $this;
+	}
 
+	public function dispatch( Request $request ) {
+		return parent::dispatch($request, $this->services);
 	}
 
 	/**
 	 * Loads the routes used by the module.
 	 * By default routes are contained in the routes.php file located in the same
-	 * @return $this
+	 * @return void
 	 */
 	protected function loadRoutes() {
-		$router = $this->router;
+
+		$router = $this->services['router'];
+
 		require "{$this->path}/routes.php";
+
+		$this->router = $router;
+
 	}
 
 }

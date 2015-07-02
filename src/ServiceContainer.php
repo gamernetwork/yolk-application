@@ -11,6 +11,8 @@
 
 namespace yolk\app;
 
+use yolk\contracts\app\Config;
+
 use yolk\database\DSN;
 
 /**
@@ -29,9 +31,10 @@ class ServiceContainer extends \Pimple\Container {
 	public function offsetGet( $id ) {
 
 		// key doesn't exist but it might be a shortcut
-		if( !isset($this->keys[$id]) && ($shortcut = $this->matchShortcut($id)) ) {
+		if( !parent::offsetExists($id) && ($shortcut = $this->matchShortcut($id)) ) {
 			list($type, $name) = $shortcut;
-			parent::offsetSet($id, $this->$type($name, $this->getConfig));
+			if( $config = $this->getConfig() )
+				parent::offsetSet($id, $this->$type($name, $config));
 		}
 
 		return parent::offsetGet($id);
@@ -80,7 +83,7 @@ class ServiceContainer extends \Pimple\Container {
 
 		$config = false;
 
-		if( isset($this->keys['config']) )
+		if( parent::offsetExists('config') )
 			$config = parent::offsetGet('config');
 
 		if( !$config instanceof Config )
@@ -113,7 +116,7 @@ class ServiceContainer extends \Pimple\Container {
 
 		$db = parent::offsetGet('db')->add($name, $dsn);
 
-		isset($this->keys['profiler']) && $db->setProfiler(parent::offsetGet('profiler'));
+		parent::offsetExists('profiler') && $db->setProfiler(parent::offsetGet('profiler'));
 
 		return $db;
 
@@ -134,7 +137,7 @@ class ServiceContainer extends \Pimple\Container {
 
 		$view = parent::offsetGet('view')->create($config);
 
-		isset($this->keys['profiler']) && $view->setProfiler(parent::offsetGet('profiler'));
+		parent::offsetExists('profiler') && $view->setProfiler(parent::offsetGet('profiler'));
 
 		return $view;
 
