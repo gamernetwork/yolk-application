@@ -254,7 +254,7 @@ class BaseResponse implements Response {
 			setcookie($name, $cookie['value'], $cookie['expires'], $cookie['path'], $cookie['domain']);
 		}
 
-		echo $this->versionStaticAssets($this->body);
+		echo $this->body;
 
 		return $this;
 
@@ -279,77 +279,6 @@ class BaseResponse implements Response {
 			 ->header('Location', $url);
 
 		return $this;
-
-	}
-
-	protected function versionStaticAssets( $str ) {
-
-		if( !$this->version )
-			return $str;
-
-		$version = $this->version;
-
-		$str = preg_replace_callback(
-			'/<link [^>]*>/',
-			function( $m ) use ($version) {
-				
-				$str = array_pop($m);
-				
-				// extract attributes we care about
-				$link = [];
-				foreach( ['rel', 'type', 'media', 'href'] as $attr ) {
-					preg_match("/ {$attr}=\"([^\"]*)\"/", $str, $link[$attr]);
-				}
-				
-				// make sure we have default values for missing attributes
-				$link = array(
-					'rel'   => $link['rel']   ? $link['rel'][1]   : 'stylesheet',
-					'type'  => $link['type']  ? $link['type'][1]  : 'text/css',
-					'media' => $link['media'] ? $link['media'][1] : 'all',
-					'href'  => $link['href'][1],
-				);
-
-				// if this link is a local stylesheet then version it
-				if( ($link['rel'] == 'stylesheet') && !preg_match('/^(https?:)?\/\//', $link['href']) ) {
-					$str = "<link rel=\"{$link['rel']}\" href=\"{$link['href']}{$version}\" media=\"{$link['media']}\" type=\"{$link['type']}\" />";
-				}
-				
-				return $str;
-
-			},
-			$str
-		);
-
-		$str = preg_replace_callback(
-			'/<script [^>]*>/',
-			function( $m ) use ($version) {
-				
-				$str = array_pop($m);
-
-				// extract attributes we care about
-				$script = array();
-				foreach( array('type', 'src') as $attr ) {
-					preg_match("/ {$attr}=\"([^\"]*)\"/", $str, $script[$attr]);
-				}
-				
-				// make sure we have default values for missing attributes
-				$script = array(
-					'type' => $script['type'] ? $script['type'][1] : 'application/javascript',
-					'src'  => $script['src']  ? $script['src'][1]  : '',
-				);
-
-				// if this link is a local stylesheet then version it
-				if( $script['src'] && !preg_match('/^(https?:)?\/\//', $script['src']) ) {
-					$str = "<script type=\"{$script['type']}\" src=\"{$script['src']}{$version}\">";
-				}
-
-				return $str;
-
-			},
-			$str
-		);
-
-		return $str;
 
 	}
 

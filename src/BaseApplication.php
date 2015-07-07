@@ -86,6 +86,8 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 			// TODO: this should be inverted by injecting the profiler into the response object in services.php
 			$this->injectProfiler($response, $this->services['profiler']);
 
+			$response->send();
+
 			return $response;
 
 		}
