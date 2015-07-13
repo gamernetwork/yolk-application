@@ -11,7 +11,7 @@
 
 namespace yolk\app;
 
-use yolk\contracts\app\Config;
+use yolk\contracts\support\Config;
 
 use yolk\database\DSN;
 
