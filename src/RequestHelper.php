@@ -75,7 +75,7 @@ class RequestHelper {
 	 * @param  array   $post     contents of the _POST superglobal
 	 * @return array
 	 */
-	public static function getData( $method, $post ) {
+	public static function getData( $method, array $post ) {
 
 		$data = array();
 

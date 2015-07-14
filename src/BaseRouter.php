@@ -87,7 +87,7 @@ class BaseRouter {
 
 	/**
 	 * Turn a controller action into a URL
-	 * @param string $action      controller action spec (like JobsController/index)
+	 * @param string $handler     controller action spec (like JobsController/index)
 	 * @param array  $args        positional arguments for url (e.g. job id) as strings
 	 */
 	public function reverse( $handler, $args = [] ) {

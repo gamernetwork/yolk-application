@@ -48,7 +48,7 @@ class ServiceContainer extends \Pimple\Container {
 			return $exists;
 
 		// if $id is a shortcut and we have a valid config instance then check if there is a valid config for the shortcut
-		if( ($shortcut = $this->matchShortcut()) && ($config = $this->getConfig()) ) {
+		if( ($shortcut = $this->matchShortcut($id)) && ($config = $this->getConfig()) ) {
 
 			list($type, $name) = $shortcut;
 
@@ -106,7 +106,7 @@ class ServiceContainer extends \Pimple\Container {
 
 	protected function db( $name, Config $config ) {
 
-		if( !$config = $this['config']->get("databases.{$name}") )
+		if( !$config = $config->get("databases.{$name}") )
 			throw new \LogicException("No configuration for database '{$name}'");
 
 		if( is_array($config) )
@@ -124,7 +124,7 @@ class ServiceContainer extends \Pimple\Container {
 
 	protected function log( $name, Config $config ) {
 		
-		if( !$config = $this['config']->get("logs.{$name}") )
+		if( !$config = $config->get("logs.{$name}") )
 			throw new \LogicException("No configuration for log '{$name}'");
 
 		return parent::offsetGet('log')->create($config);
@@ -132,7 +132,7 @@ class ServiceContainer extends \Pimple\Container {
 
 	protected function view( $name, Config $config ) {
 
-		if( !$config = $this['config']->get("views.{$name}") )
+		if( !$config = $config->get("views.{$name}") )
 			throw new \LogicException("No configuration for view '{$name}'");
 
 		$view = parent::offsetGet('view')->create($config);

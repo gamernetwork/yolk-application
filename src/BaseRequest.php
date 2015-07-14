@@ -40,7 +40,7 @@ class BaseRequest implements Request {
 
 	/**
 	 * Portion of the uri to ignore.
-	 * @var string
+	 * @var array
 	 */
 	protected $uri_prefix;
 

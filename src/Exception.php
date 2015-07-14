@@ -16,7 +16,7 @@ namespace yolk\app;
  * This is the default catch-all exception that generates an 500 response code.
  * Applications should throw a more specific exception whenever possible.
  */
-class Exception extends \yolk\core\Exception {
+class Exception {
 
 	public function __construct( $message = 'Internal Server Error', $code = 500, \Exception $previous = null ) {
 		parent::__construct($message, $code, $previous);

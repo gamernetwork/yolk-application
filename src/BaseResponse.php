@@ -217,16 +217,6 @@ class BaseResponse implements Response {
 
 	}
 
-	public function version( $version = null ) {
-		if( $version === null ) {
-			return $this->version;
-		}
-		else {
-			$this->version = $version;
-			return $this;
-		}
-	}
-
 	public function message( $text, $type = self::MSG_INFO, $title = '' ) {
 		$this->messages[] = [
 			'type'  => $type,
@@ -245,7 +235,7 @@ class BaseResponse implements Response {
 		}
 
 		// messages cookie
-		if( $this->messages ) {
+		if( isset($this->messages) ) {
 			setcookie('YOLK_MESSAGES', base64_encode(serialize($this->messages)), 0, '/');
 			unset($this->cookies['YOLK_MESSAGES']);
 		}

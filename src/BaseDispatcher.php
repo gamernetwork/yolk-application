@@ -90,7 +90,7 @@ abstract class BaseDispatcher implements Dispatcher {
 	 * @param  ServiceContainer $services
 	 * @return callable
 	 */
-	protected function makeHandler( $handler, ServiceContainer $services ) {
+	protected function makeHandler( $handler, ServiceContainer $services = null ) {
 
 		// strings in Foo::bar format are classes that need to be instantiated with the service container
 		if( is_string($handler) && strpos($handler, '::') ) {
@@ -129,7 +129,7 @@ abstract class BaseDispatcher implements Dispatcher {
 	 * Called after the request has been dispatched to the handler.
 	 * @param  Request  $request
 	 * @param  array    $route
-	 * @param  Response $Response
+	 * @param  Response $response
 	 * @return Response|null
 	 */
 	protected function afterDispatch( Request $request, array $route, Response $response ) {

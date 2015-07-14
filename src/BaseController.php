@@ -11,6 +11,8 @@
 
 namespace yolk\app;
 
+use yolk\view\View;
+
 /**
  * Base controller object.
  */
@@ -24,7 +26,7 @@ abstract class BaseController {
 
 	/**
 	 * Make sure we store the dependency container.
-	 * @param \yolk\core\Services $services    services available to the controller.
+	 * @param ServiceContainer $services    services available to the controller.
 	 */
 	public function __construct( \yolk\app\ServiceContainer $services ) {
 		$this->services = $services;
@@ -58,7 +60,7 @@ abstract class BaseController {
 		$context['STATIC_PATH'] = $this->services['config']->get('paths.static');
 
 		// if we weren't given a view instance then we should create one using the specified configuration
-		if( !($view instanceof \yolk\view\View) )
+		if( !($view instanceof View) )
 			$view = $this->services["view.{$view}"];
 
 		return $this->respond(
