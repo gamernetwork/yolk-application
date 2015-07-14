@@ -20,7 +20,7 @@ abstract class BaseController {
 
 	/**
 	 * Dependency container and factory.
-	 * @var \yolk\core\Services
+	 * @var \yolk\app\ServiceContainer
 	 */
 	protected $services;
 
