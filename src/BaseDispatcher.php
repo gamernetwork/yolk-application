@@ -106,9 +106,6 @@ abstract class BaseDispatcher implements Dispatcher {
 
 		}
 
-		if( !is_callable($handler) )
-			throw new \LogicException("Specified route handler is not callable");
-
 		return $handler;
 
 	}

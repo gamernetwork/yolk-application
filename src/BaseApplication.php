@@ -115,8 +115,7 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 		if( !($error instanceof exceptions\NotFoundException) ) {
 			if( Yolk::isDebug() )
 				throw $error;
-			else
-				error_log(get_class($error). ': '. $error->getMessage(). ' ['. $error->getFile(). ':'. $error->getLine(). ']');
+			error_log(get_class($error). ': '. $error->getMessage(). ' ['. $error->getFile(). ':'. $error->getLine(). ']');
 		}
 
 		// default to a 500 error

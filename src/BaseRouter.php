@@ -111,36 +111,56 @@ class BaseRouter {
 	 */
 	public function match( $uri, $method = 'GET' ) {
 
-		$route      = false;
-		$parameters = [];
-
 		// routes that don't use parameters should match directly
 		if( isset($this->routes[$uri]) ) {
 			$route = $this->routes[$uri];
+			$parameters = [];
 		}
 		else {
-			// try and match the uri against a defined route
-			foreach( $this->routes as $regex => $spec ) {
-				if( preg_match(";{$regex};", $uri, $parameters) ) {
-					$route = $spec;
-					array_shift($parameters);  // first element is the complete string, we only care about the sub-matches
-					break;
-				}
-			}
+			list($route, $parameters) = $this->findMatch($uri);
 		}
 
-		if( !$route )
-			throw new exceptions\NotFoundException();
-
-		// check methods
-		if( $route['methods'] && !in_array($method, $route['methods']) )
-			throw new exceptions\NotAllowedException();
+		$this->checkAllowed($route, $method);
 
 		return [
 			'handler'    => $route['handler'],
 			'parameters' => $parameters,
 			'extra'      => $route['extra'],
 		];
+
+	}
+
+	public function findMatch( $uri ) {
+
+		$route      = false;
+		$parameters = [];
+
+		// try and match the uri against a defined route
+		foreach( $this->routes as $regex => $spec ) {
+			if( preg_match(";{$regex};", $uri, $parameters) ) {
+				$route = $spec;
+				array_shift($parameters);  // first element is the complete string, we only care about the sub-matches
+				break;
+			}
+		}
+
+		if( !$route )
+			throw new exceptions\NotFoundException();
+
+		return [$route, $parameters];
+
+	}
+
+	/**
+	 * Ensure the method used to make the request is allowed for the matched route
+	 * @param  array $route
+	 * @param  string $method
+	 * @return void
+	 */
+	public function checkAllowed( array $route, $method ) {
+
+		if( $route['methods'] && !in_array($method, $route['methods']) )
+			throw new exceptions\NotAllowedException($route['methods']);
 
 	}
 

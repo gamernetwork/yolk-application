@@ -18,7 +18,7 @@ class MethodNotAllowedException extends \yolk\app\Exception {
 
 	protected $allowed;
 
-	public function __construct( $message = 'Method Not Allowed', \Exception $previous = null, array $allowed = [] ) {
+	public function __construct( array $allowed = [], $message = 'Method Not Allowed', \Exception $previous = null ) {
 		parent::__construct($message, 405, $previous);
 		$this->allowed = $allowed;
 	}
