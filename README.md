@@ -1,5 +1,6 @@
-
 # Yolk Application
+
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/gamernetwork/yolk-application/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/gamernetwork/yolk-application/?branch=master)
 
 The foundation of Yolk web applications. Request/Response handling, routing, etc.
 
