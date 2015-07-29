@@ -14,9 +14,9 @@
     "minimum-stability": "dev",
     "require": {
         "php": ">=5.4.0",
-        "gamernetwork/yolk-contracts": "1.*",
-        "gamernetwork/yolk-core": "1.*",
-        "gamernetwork/yolk-support": "1.*",
+        "gamernetwork/yolk-contracts": "dev-develop",
+        "gamernetwork/yolk-core": "dev-develop",
+        "gamernetwork/yolk-support": "dev-develop",
         "pimple/pimple": "3.*"
     },
     "require-dev": {
