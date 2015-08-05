@@ -64,13 +64,15 @@ abstract class BaseDispatcher implements Dispatcher {
 		// prepend the request to the parameter array
 		array_unshift($route['parameters'], $request);
 
-		$response = $this->beforeDispatch($request, $route);
+		// removed for middleware work
+		//$response = $this->beforeDispatch($request, $route);
 
 		// execute the handler if we don't already have a response
-		if( !$response )
-			$response = call_user_func_array($handler, $route['parameters']);
+		//if( !$response )
+		$response = call_user_func_array($handler, $route['parameters']);
 
-		$this->afterDispatch($request, $route, $response);
+		// removed for middleware work
+		//$this->afterDispatch($request, $route, $response);
 
 		// remove the URI prefix from earlier as that application has dealt with request
 		// and 'this' layer may well need to do further processing
@@ -114,24 +116,23 @@ abstract class BaseDispatcher implements Dispatcher {
 	 * Called prior to the request being dispatched to the handler.
 	 * If a Response object is returned, the handler will be skipped.
 	 * @param  Request $request
-	 * @param  array   $route
 	 * @return Response|null
 	 */
-	protected function beforeDispatch( Request $request, array $route ) {
+	public function beforeDispatch( Request $request ) {
 		// do nothing by default
 		return null;
+		// if a response is returned, it will terminate dispatch
 	}
 
 	/**
 	 * Called after the request has been dispatched to the handler.
 	 * @param  Request  $request
-	 * @param  array    $route
 	 * @param  Response $response
 	 * @return Response|null
 	 */
-	protected function afterDispatch( Request $request, array $route, Response $response ) {
-		// do nothing by default
-		return null;
+	public function afterDispatch( Request $request, Response $response ) {
+		// MUST return a response
+		return $response;
 	}
 
 }

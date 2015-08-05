@@ -37,6 +37,13 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 	protected $services;
 
 	/**
+	 * An array of \yolk\app\BaseModule
+	 * @var Array
+	 */
+	protected $modules;
+
+
+	/**
 	 * Dependency container object.
 	 * @param string $path        application's filesystem location
 	 */
@@ -50,6 +57,7 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 
 			$this->loadServices();
 			$this->loadConfig();
+			$this->loadModules();
 			$this->loadRoutes();
 
 		}
@@ -105,7 +113,22 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 
 		$request->setUriPrefix($this->services['config']->get('paths.web'));
 
-		return parent::dispatch($request, $this->services);
+		// process middleware
+		foreach( $this->modules as $module ) {
+			$response = $module->beforeDispatch( $request );
+			if( null !== $response ) {
+				// if we get a response, we stop processing
+				return $response;
+			}
+		}
+		$response = parent::dispatch($request, $this->services);
+
+		// process middleware backwards on way out
+		foreach( array_reverse($this->modules) as $module ) {
+			$response = $module->afterDispatch( $request, $response );
+		}
+
+		return $response;
 
 	}
 
@@ -204,6 +227,17 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 		require "{$this->path}/app/routes.php";
 
 		$this->router = $router;
+	}
+
+	protected function loadModules() {
+
+		$this->modules = [];
+
+		foreach( $this->services['config']->get('modules') as $name => $module ) {
+			list($package, $namespace) = $module;
+			$class = $namespace. '\\Module';
+			$this->modules[$name] = new $class($this->services);
+		}
 
 	}
 
