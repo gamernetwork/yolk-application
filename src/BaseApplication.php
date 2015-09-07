@@ -233,7 +233,7 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 
 		$this->modules = [];
 
-		foreach( $this->services['config']->get('modules') as $name => $module ) {
+		foreach( $this->services['config']->get('modules', []) as $name => $module ) {
 			list($package, $namespace) = $module;
 			$class = $namespace. '\\Module';
 			$this->modules[$name] = new $class($this->services);
