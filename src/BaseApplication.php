@@ -71,7 +71,7 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 				$this->loadServices();
 				$this->loadConfig();
 				$this->loadModules();
-				$This->loadRoutes();
+				$this->loadRoutes();
 			}
 
 			// no request was specified so create one from the PHP super-globals
