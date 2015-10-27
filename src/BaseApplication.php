@@ -48,23 +48,8 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 	 * @param string $path        application's filesystem location
 	 */
 	public function __construct( $path ) {
-
-		try {
-
-			parent::__construct();
-
-			$this->path = $path;
-
-			$this->loadServices();
-			$this->loadConfig();
-			$this->loadModules();
-			$this->loadRoutes();
-
-		}
-		catch( \Exception $e ) {
-			$this->error($e);
-		}
-
+		parent::__construct();
+		$this->path = $path;
 	}
 
 	/**
@@ -80,6 +65,14 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 		try {
 
 			$response = null;
+
+			// not initialised yet so should probably do that
+			if( !$this->services ) {
+				$this->loadServices();
+				$this->loadConfig();
+				$this->loadModules();
+				$This->loadRoutes();
+			}
 
 			// no request was specified so create one from the PHP super-globals
 			if( !$request )
@@ -172,6 +165,8 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 			return $response;
 
 		$profiler->isRunning() && $profiler->stop();
+
+ 		$profiler->config($this->services['config']);
 
 		$body = $response->body();
 
