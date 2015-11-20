@@ -19,6 +19,8 @@ use yolk\contracts\app\Request;
 use yolk\contracts\app\Response;
 use yolk\contracts\profiler\Profiler;
 
+use yolk\exceptions\Handler as YolkHandler;
+
 /**
  * Application is basically a front controller class that acts as a "root object".
  */
@@ -42,7 +44,6 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 	 */
 	protected $modules;
 
-
 	/**
 	 * Dependency container object.
 	 * @param string $path        application's filesystem location
@@ -50,6 +51,7 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 	public function __construct( $path ) {
 		parent::__construct();
 		$this->path = $path;
+		Yolk::setExceptionHandler([$this, 'error']);
 	}
 
 	/**
@@ -57,82 +59,19 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 	 * return \yolk\app\Response
 	 */
 	public function run() {
-		return $this();
+		return $this(
+			BaseRequest::createFromGlobals()
+		);
 	}
 
-	public function __invoke( Request $request = null ) {
-
-		try {
-
-			$response = null;
-
-			// not initialised yet so should probably do that
-			if( !$this->services ) {
-				$this->loadServices();
-				$this->loadConfig();
-				$this->loadModules();
-				$this->loadRoutes();
-			}
-
-			// no request was specified so create one from the PHP super-globals
-			if( !$request )
-				$request = BaseRequest::createFromGlobals();
-
-			$response = $this->dispatch($request);
-
-			// if request contains flash messages and the response doesn't then we need to remove them
-			if( $request->messages() && !$response->cookie('YOLK_MESSAGES') )
-				$response->cookie('YOLK_MESSAGES', '', time() - 60);
-
-			// TODO: this should be inverted by injecting the profiler into the response object in services.php
-			$this->injectProfiler($response, $this->services['profiler']);
-
-			$response->send();
-
-			return $response;
-
-		}
-		catch( \Exception $e ) {
-			$context = [
-				'request'  => $request,
-				'response' => $response,
-			];
-			$this->error($e, $context);
-		}
-
-	}
-
-	public function dispatch( Request $request ) {
-
-		$request->setUriPrefix($this->services['config']->get('paths.web'));
-
-		// process middleware
-		foreach( $this->modules as $module ) {
-			$response = $module->beforeDispatch( $request );
-			if( null !== $response ) {
-				// if we get a response, we stop processing
-				return $response;
-			}
-		}
-		$response = parent::dispatch($request, $this->services);
-
-		// process middleware backwards on way out
-		foreach( array_reverse($this->modules) as $module ) {
-			$response = $module->afterDispatch( $request, $response );
-		}
-
-		return $response;
-
-	}
-
-	protected function error( \Exception $error, $context = [] ) {
-
-		// if this isn't a 404 then log it and if we're in debug mode then throw it to Yolk's exception handler
-		if( !($error instanceof exceptions\NotFoundException) ) {
-			if( Yolk::isDebug() )
-				throw $error;
-			error_log(get_class($error). ': '. $error->getMessage(). ' ['. $error->getFile(). ':'. $error->getLine(). ']');
-		}
+	/**
+	 * This is our application error handler, called by Yolk::run().
+	 * We'll send an appropriate HTTP status code and then display an error page.
+	 * @param  \Exception $error
+	 * @param  string     $error_page  the default error page to display
+	 * @return void
+	 */
+	public function error( \Exception $error, $error_page ) {
 
 		// default to a 500 error
 		$code    = 500;
@@ -150,40 +89,46 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 
 		// do we have a specific error page?
 		if( file_exists("{$this->path}/app/errors/{$code}.php") )
-			include "{$this->path}/app/errors/{$code}.php";
-		// otherwise
+			$error_page = "{$this->path}/app/errors/{$code}.php";
+		// or generic page
 		elseif( file_exists("{$this->path}/app/errors/generic.php") )
-			include "{$this->path}/app/errors/generic.php";
-		else
-			throw $error;
+			$error_page = "{$this->path}/app/errors/generic.php";
+
+		// we don't log 404's - there might be lots of them!
+		$log = !($error instanceof exceptions\NotFoundException);
+
+		YolkHandler::exception($error, $error_page, $log);
 
 	}
 
-	protected function injectProfiler( Response $response, Profiler $profiler = null ) {
+	protected function init() {
 
-		if( !$profiler )
-			return $response;
+		$this->loadServices();
+		$this->loadConfig();
+		$this->loadModules();
+		$this->loadRoutes();
 
-		$profiler->isRunning() && $profiler->stop();
+		$this->addMiddleware(
+			function( Request $request, callable $next = null ) {
 
- 		$profiler->config($this->services['config']);
+				$request->setUriPrefix($this->services['config']->get('paths.web'));
 
-		$body = $response->body();
+				$response = $next($request);
 
-		$body = str_replace('%% YOLK_DURATION %%', number_format($profiler->getTotalElapsed() * 1000, 0), $body);
-		$body = str_replace('%% YOLK_MEMORY %%', number_format(memory_get_peak_usage() / (1024 * 1024), 3), $body);
-		$body = str_replace('%% YOLK_QUERIES %%', count($profiler->getQueries()), $body);
-		$body = str_replace('%% YOLK_QUERY_TIME %%', number_format($profiler->getTotalElapsed('Query') * 1000, 0), $body);
+				// if request contains flash messages and the response doesn't then we need to remove them
+				if( $request->messages() && !$response->cookie('YOLK_MESSAGES') )
+					$response->cookie('YOLK_MESSAGES', '', time() - 60);
 
-		$response->body(
-			str_replace(
-				'%% YOLK_DEBUG %%',
-				$profiler->getHTML(),
-				$body
-			)
+				// TODO: this should be inverted by injecting the profiler into the response object in services.php
+				// TODO: is this problematic given: https://wiki.php.net/rfc/closures/object-extension
+				$this->injectProfiler($response, $this->services['profiler']);
+
+				return $response;
+
+			}
 		);
 
-		return $response;
+		return $this;
 
 	}
 
@@ -233,6 +178,34 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 			$class = $namespace. '\\Module';
 			$this->modules[$name] = new $class($this->services);
 		}
+
+	}
+
+	protected function injectProfiler( Response $response, Profiler $profiler = null ) {
+
+		if( !$profiler )
+			return $response;
+
+		$profiler->isRunning() && $profiler->stop();
+
+		$profiler->config($this->services['config']);
+
+		$body = $response->body();
+
+		$body = str_replace('%% YOLK_DURATION %%', number_format($profiler->getTotalElapsed() * 1000, 0), $body);
+		$body = str_replace('%% YOLK_MEMORY %%', number_format(memory_get_peak_usage() / (1024 * 1024), 3), $body);
+		$body = str_replace('%% YOLK_QUERIES %%', count($profiler->getQueries()), $body);
+		$body = str_replace('%% YOLK_QUERY_TIME %%', number_format($profiler->getTotalElapsed('Query') * 1000, 0), $body);
+
+		$response->body(
+			str_replace(
+				'%% YOLK_DEBUG %%',
+				$profiler->getHTML(),
+				$body
+			)
+		);
+
+		return $response;
 
 	}
 

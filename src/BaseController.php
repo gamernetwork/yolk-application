@@ -11,12 +11,16 @@
 
 namespace yolk\app;
 
+use yolk\contracts\app\Controller;
+use yolk\contracts\app\Request as NewRequest;
+use yolk\contracts\app\Response as NewResponse;
+
 use yolk\view\View;
 
 /**
  * Base controller object.
  */
-abstract class BaseController {
+abstract class BaseController implements Controller {
 
 	/**
 	 * Dependency container and factory.
@@ -30,6 +34,14 @@ abstract class BaseController {
 	 */
 	public function __construct( \yolk\app\ServiceContainer $services ) {
 		$this->services = $services;
+	}
+
+	public function __before( NewRequest $request ) {
+		return false;
+	}
+
+	public function __after( NewRequest $request, NewResponse $response ) {
+		return $response;
 	}
 
 	/**
