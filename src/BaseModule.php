@@ -49,8 +49,8 @@ class BaseModule extends BaseDispatcher implements Module {
 
 	}
 
-	public function dispatch( Request $request ) {
-		return parent::dispatch($request, $this->services);
+	protected function init() {
+		
 	}
 
 	/**
