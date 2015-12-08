@@ -120,15 +120,12 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 					$response->cookie('YOLK_MESSAGES', '', time() - 60);
 
 				// TODO: this should be inverted by injecting the profiler into the response object in services.php
-				// TODO: is this problematic given: https://wiki.php.net/rfc/closures/object-extension
 				$this->injectProfiler($response, $this->services['profiler']);
 
 				return $response;
 
 			}
 		);
-
-		return $this;
 
 	}
 
