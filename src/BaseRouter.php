@@ -72,7 +72,7 @@ class BaseRouter {
 		$methods = [];
 
 		// if allowed methods are specified then find out what they are
-		if( preg_match('/^\([A-z|]+\):(.*)/i', $regex, $m) ) {
+		if( preg_match('/^\(([A-z|]+)\):(.*)/i', $regex, $m) ) {
 			$methods = explode('|', trim($m[1], '()'));
 			$regex   = $m[2];
 		}
@@ -160,7 +160,7 @@ class BaseRouter {
 	public function checkAllowed( array $route, $method ) {
 
 		if( $route['methods'] && !in_array($method, $route['methods']) )
-			throw new exceptions\NotAllowedException($route['methods']);
+			throw new exceptions\MethodNotAllowedException($route['methods']);
 
 	}
 
