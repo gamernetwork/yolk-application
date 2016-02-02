@@ -133,7 +133,7 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 	 * Loads the services used by the application.
 	 * @return void
 	 */
-	protected function loadServices()  {
+	protected function loadServices() {
 
 		$container = new ServiceContainer();
 
@@ -147,7 +147,7 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 	 * Loads the application's configuration settings.
 	 * @return void
 	 */
-	protected function loadConfig()  {
+	protected function loadConfig() {
 
 		$this->services['config']->load("{$this->path}/config/main.php");
 
