@@ -142,7 +142,7 @@ abstract class BaseDispatcher implements Dispatcher, Middleware {
 	protected function makeHandler( $handler ) {
 
 		// strings in Foo::bar format are classes that need to be instantiated with the service container
-		if( is_string($handler) && strpos($handler, '::') ) {
+		if( $this->isControllerClassHandler($handler) ) {
 
 			list($class, $method) = explode('::', $handler);
 
@@ -157,7 +157,7 @@ abstract class BaseDispatcher implements Dispatcher, Middleware {
 
 		// if our handler is an instance of the Controller interface then
 		// wrap the handler in a closure that runs the __before and __after methods
-		if( is_array($handler) && ($handler[0] instanceof Controller) ) {
+		if( $this->isControllerInstanceHandler($handler) ) {
 
 			list($controller, $method) = $handler;
 
@@ -187,6 +187,25 @@ abstract class BaseDispatcher implements Dispatcher, Middleware {
 
 		return $handler;
 
+	}
+
+	/**
+	 * Determines if the specified handler is a controller class/method handler
+	 * in the format Foo::bar
+	 * @param  mixed  $handler
+	 * @return boolean
+	 */
+	protected function isControllerClassHandler( $handler ) {
+		return is_string($handler) && strpos($handler, '::');
+	}
+
+	/**
+	 * Determines if the specified handler is an instance of the Controller interface.
+	 * @param  mixed  $handler
+	 * @return boolean
+	 */
+	protected function isControllerInstanceHandler( $handler ) {
+		return is_array($handler) && ($handler[0] instanceof Controller);
 	}
 
 }

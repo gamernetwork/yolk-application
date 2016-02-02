@@ -23,24 +23,24 @@ class RequestHelper {
 	 */
 	public static function getHeaders( $server ) {
 
-		$headers = array();
+		$headers = [];
+
+		// cookies are handled elsewhere
+		unset($server['HTTP_COOKIE']);
+
+		// these are CGI/server vars that were originally HTTP headers but have
+		$vars = ['CONTENT_TYPE', 'CONTENT_LENGTH'];
 
 		// iterate environment vars (possibly from CGI)
 		foreach( $server as $k => $v ) {
 			if( substr($k, 0, 5) == 'HTTP_' ) {
-				$name = str_replace('_', ' ', strtolower(substr($k, 5)));
-				$name = str_replace(' ', '-', $name);
-				if( $name != 'cookie' )
-					$headers[$name] = $v;
+				$header = static::normalise(substr($k, 5));
+				$headers[$header] = $v;
 			}
-		}
-
-		if( isset($server['CONTENT_TYPE']) ) {
-			$headers['content-type'] = $server['CONTENT_TYPE']; 
-		}
-
-		if( isset($server['CONTENT_LENGTH']) ) {
-			$headers['content-length'] = $server['CONTENT_LENGTH']; 
+			elseif( in_array($k, $vars) ) {
+				$header = static::normalise($k);
+				$headers[$header] = $v;
+			}
 		}
 
 		return $headers;
@@ -104,6 +104,9 @@ class RequestHelper {
 		return $cleaned;
 	}
 
+	protected static function normalise( $name ) {
+		return strtolower(preg_replace('/[ _]+/', '-', $name));
+	}
 
 }
 
