@@ -76,7 +76,7 @@ abstract class BaseDispatcher implements Dispatcher, Middleware {
 			return $this->dispatch($request);
 
 		// run the next middleware
-        return $middleware($request, $this);
+		return $middleware($request, $this);
 
 	}
 

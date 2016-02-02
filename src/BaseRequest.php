@@ -338,7 +338,7 @@ class BaseRequest implements Request {
 
 	public function isSecure() {
 		$https = $this->environment('HTTPS');
-		return !empty($https) && ($https !== 'off');;
+		return !empty($https) && ($https !== 'off'); ;
 	}
 
 	public function isGet() {

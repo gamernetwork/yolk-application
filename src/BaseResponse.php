@@ -170,7 +170,7 @@ class BaseResponse implements Response {
 			return $this->headers;
 
 		// normalise header names
-		$name = str_replace( '- ', '-', ucwords( str_replace( '-', '- ', $name ) ) );
+		$name = str_replace('- ', '-', ucwords(str_replace('-', '- ', $name)));
 
 		// no value specified so return current value
 		if( $value === null )
@@ -206,7 +206,7 @@ class BaseResponse implements Response {
 		if( $value === null )
 			return isset($this->cookies[$name]) ? $this->cookies[$name] : [];
 
-		$this->cookies[$name] =  [
+		$this->cookies[$name] = [
 			'value'   => $value,
 			'expires' => $expires ? time() + $expires : 0,
 			'path'    => $path,
@@ -230,7 +230,7 @@ class BaseResponse implements Response {
 
 		header("HTTP/1.1 {$this->status['code']} {$this->status['message']}");
 
-		foreach ($this->headers as $name => $value) {
+		foreach( $this->headers as $name => $value ) {
 			header("{$name}: $value");
 		}
 
@@ -260,12 +260,12 @@ class BaseResponse implements Response {
 		if( $this->redirect_prefix ) {
 			// caller couldn't be bothered to specify so decide for them
 			if( $prefix === null )
-				$prefix = !preg_match('/^https?:\/\//', $url) && !preg_match('/^'.preg_quote($this->redirect_prefix, '/').'/', $url);
+				$prefix = !preg_match('/^https?:\/\//', $url) && !preg_match('/^' . preg_quote($this->redirect_prefix, '/') . '/', $url);
 			if( $prefix )
-				$url = $this->redirect_prefix. $url;
+				$url = $this->redirect_prefix . $url;
 		}
 
-		$this->status( $permanent ? 301 : 302)
+		$this->status($permanent ? 301 : 302)
 			 ->header('Location', $url);
 
 		return $this;

@@ -95,7 +95,7 @@ class BaseRouter {
 			if( $route['handler'] == $handler ) {
 				$url = $route['url'];
 				foreach( $args as $a ) {
-					$url = preg_replace( '/\([^\)]*\)/', $a, $url );
+					$url = preg_replace('/\([^\)]*\)/', $a, $url);
 				}
 				return $url;
 			}
@@ -139,7 +139,7 @@ class BaseRouter {
 		foreach( $this->routes as $regex => $spec ) {
 			if( preg_match(";{$regex};", $uri, $parameters) ) {
 				$route = $spec;
-				array_shift($parameters);  // first element is the complete string, we only care about the sub-matches
+				array_shift($parameters); // first element is the complete string, we only care about the sub-matches
 				break;
 			}
 		}
