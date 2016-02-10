@@ -318,7 +318,24 @@ class BaseRequest implements Request {
 	public function ip() {
 		return $this->ip;
 	}
-	
+
+	public function authUser() {
+
+		// authenticated user location can vary between php/apache/nginx/php-fpm combo's and configs
+		// so just try several possible keys and return the first non-empty one
+		foreach( ['PHP_AUTH_USER', 'AUTHENTICATE_USERNAME', 'REMOTE_USER'] as $k ) {
+			if( !empty($this->environment[$k]) )
+				return $this->environment[$k];
+		}
+
+		return '';
+
+	}
+
+	public function authPassword() {
+		return isset($this->environment['PHP_AUTH_PW']) ? $this->environment['PHP_AUTH_PW'] : '';
+	}
+
 	public function country( $default = 'GB' ) {
 		return $this->country_code ? $this->country_code : $default;
 	}
