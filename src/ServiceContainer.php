@@ -11,6 +11,8 @@
 
 namespace yolk\app;
 
+use yolk\Yolk;
+
 use yolk\contracts\support\Config;
 
 use yolk\database\DSN;
@@ -136,6 +138,13 @@ class ServiceContainer extends \Pimple\Container {
 			throw new \LogicException("No configuration for view '{$name}'");
 
 		$view = parent::offsetGet('view')->create($config);
+
+		// used extensions are defined in the config file under the extensions option.
+		// we then use the view name/type as a prefix and ask the service container to
+		// provide an instance of the extension that we can inject...
+		foreach( Yolk::get($config, 'extensions', []) as $extension ) {
+			$view->addExtension($this["{$name}.{$extension}"]);
+		}
 
 		parent::offsetExists('profiler') && $view->setProfiler(parent::offsetGet('profiler'));
 
