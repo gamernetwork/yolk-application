@@ -52,7 +52,9 @@ abstract class BaseController implements Controller {
 	 */
 	protected function respond( $body ) {
 		$response = $this->services['response'];
-		return $response->body($body);
+		// set response body (TODO: enough with the verbless methods)
+		$response->body($body);
+		return $response;
 	}
 
 	/**

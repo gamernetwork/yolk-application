@@ -61,6 +61,12 @@ class BaseRouter {
 	 */
 	protected $routes;
 
+	public function __construct() {
+		$this->routes = [];
+	}
+
+	public function getRoutes() { return $this->routes; }
+
 	/**
 	 * Add a route.
 	 * @param bool  $regex    regular expresion that is matched against a request URI.
@@ -77,7 +83,8 @@ class BaseRouter {
 			$regex   = $m[2];
 		}
 
-		$this->routes[$regex] = array(
+		$this->routes[] = array(
+			'pattern'   => $regex,
 			'methods' => $methods,
 			'handler' => $handler,
 			'extra'   => $extra,
@@ -103,6 +110,24 @@ class BaseRouter {
 		throw new \Exception('Reverse not found');
 	}
 
+	public function test( $route, $uri, $method ) {
+
+		$parameters = [];
+		$pattern = $route['pattern'];
+		if(
+			preg_match(";{$pattern};", $uri, $parameters)
+		) {
+			// HTTP verb check
+			if( $route['methods'] && !in_array($method, $route['methods']) ) {
+				return false;
+			}
+			// looks good
+			array_shift($parameters); // first element is the complete string, we only care about the sub-matches
+			return $parameters;
+		}
+		return false;
+	}
+
 	/**
 	 * Find a route that matches the specified Request.
 	 * @param string $uri      URI to be matched.
@@ -111,6 +136,7 @@ class BaseRouter {
 	 */
 	public function match( $uri, $method = 'GET' ) {
 
+		// TODO I don't think we can have the same pattern for a POST version and a GET version
 		// routes that don't use parameters should match directly
 		if( isset($this->routes[$uri]) ) {
 			$route = $this->routes[$uri];

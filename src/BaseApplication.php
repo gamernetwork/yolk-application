@@ -52,6 +52,7 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 		parent::__construct();
 		$this->path = $path;
 		Yolk::setExceptionHandler([$this, 'error']);
+		$this->modules = [];
 	}
 
 	/**
@@ -62,6 +63,14 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 		return $this(
 			BaseRequest::createFromGlobals()
 		);
+	}
+
+	public function dispatch( Request $request ) {
+		$response = parent::dispatch( $request );
+		if( $response !== false ) {
+			return $response;
+		}
+		throw new exceptions\NotFoundException();
 	}
 
 	/**
@@ -105,9 +114,16 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 
 		$this->loadServices();
 		$this->loadConfig();
+
+		$this->router = $this->services['router'];
+
 		$this->loadModules();
+
+		$this->registerControllers();
 		$this->loadRoutes();
 
+		// set up some middleware to handle flash messages,
+		// do some profiling and set request prefix (if installed in folder)
 		$this->addMiddleware(
 			function( Request $request, callable $next = null ) {
 
@@ -123,24 +139,25 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 				$this->injectProfiler($response, $this->services['profiler']);
 
 				return $response;
-
 			}
 		);
-
 	}
 
 	/**
-	 * Loads the services used by the application.
+	 * Sets up the service container and loads the services
+	 * used by the application.
+	 *
 	 * @return void
 	 */
 	protected function loadServices() {
+		$this->services = new ServiceContainer();
 
-		$container = new ServiceContainer();
-
-		require "{$this->path}/app/services.php";
-
-		$this->services = $container;
-
+		// default Yolk service provider
+		// provides db connection manager, logging,
+		// view factories, etc
+		$this->services->register(
+			new \yolk\ServiceProvider()
+		);
 	}
 
 	/**
@@ -148,9 +165,7 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 	 * @return void
 	 */
 	protected function loadConfig() {
-
 		$this->services['config']->load("{$this->path}/config/main.php");
-
 	}
 
 	/**
@@ -158,24 +173,29 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 	 * @return void
 	 */
 	protected function loadRoutes() {
-
-		$router = $this->services['router'];
-
-		require "{$this->path}/app/routes.php";
-
-		$this->router = $router;
+		// e.g. $router->addRoute( '/articles/?$', '\\namespace\\controllers\\Controller::articles' );
 	}
 
+	/**
+	 * Here we set up a chain of modules which
+	 * are simply mini child applications to which we can dispatch requests
+	 * @return void
+	 */
 	protected function loadModules() {
+		// e.g. $this->modules['my-module'] = new \my\namespaced\Module( $this->services );
+	}
 
-		$this->modules = [];
-
-		foreach( $this->services['config']->get('modules', []) as $name => $module ) {
-			list($package, $namespace) = $module;
-			$class = $namespace. '\\Module';
-			$this->modules[$name] = new $class($this->services);
-		}
-
+	/**
+	 * Alias a controller such that it can be called from the service by base name alone.
+	 * This allows subclassed-Controllers to substitute in modules that assume base
+	 * classes are used. It's a sort of dynamic OO design that obviates the need for
+	 * empty stub controllers peppering the code.
+	 * @return void
+	 */
+	protected function registerController( $name, $fq_class ) {
+		$this->services[$name] = function($c) use ($fq_class) {
+			return new $fq_class( $c );
+		};
 	}
 
 	protected function injectProfiler( Response $response, Profiler $profiler = null ) {
@@ -203,7 +223,6 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 		);
 
 		return $response;
-
 	}
 
 }

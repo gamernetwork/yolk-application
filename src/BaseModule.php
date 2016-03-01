@@ -45,27 +45,18 @@ class BaseModule extends BaseDispatcher implements Module {
 
 		$this->services = $services;
 
+		$this->router = $services['router'];
 		$this->loadRoutes();
-
 	}
 
 	protected function init() {
-		
 	}
 
 	/**
 	 * Loads the routes used by the module.
-	 * By default routes are contained in the routes.php file located in the same
 	 * @return void
 	 */
 	protected function loadRoutes() {
-
-		$router = $this->services['router'];
-
-		require "{$this->path}/routes.php";
-
-		$this->router = $router;
-
 	}
 
 }
