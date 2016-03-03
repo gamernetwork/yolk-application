@@ -17,6 +17,36 @@ use yolk\contracts\app\Request;
 use yolk\contracts\app\Response;
 use yolk\contracts\app\Controller;
 
+/**
+ * A dispatcher is anything that accepts a request and tries to do something with it!
+ * Dispatchers will usually invoke a router in order to map URIs to actions.
+ *
+ * Use by subclassing, rather than directly.
+ *
+ * Actions can be a valid PHP callable:
+ *
+ * * Class   - array('class_name', 'method')
+ * * Object  - array($object, 'method')
+ * * Object  - $object -- via __invoke()
+ * * Closure - function()
+ *
+ * ...or a string representing a controller class and method the dispatcher will
+ * either look up in the controller registry (the service container) or
+ * instantiate a controller if existing one isn't found.
+ * 
+ * // Should create an instance of StaticController and call the 'about' method.
+ * $this->router->addRoute('/about', 'StaticController::about');
+ *
+ * // Should call the static method 'about' on ProfileController class.
+ * $this->router->addRoute('/users/(\d+)/profile', ['ProfileController', 'about']);
+ *
+ * // Closure callback
+ * $router->addRoute('/articles/(\d+)', function( $id ) {
+ *    $article_name = CMS::getArticleName($id);
+ *    header("Location: /articles/{$article_name}"))
+ * );
+ *
+ */
 abstract class BaseDispatcher implements Dispatcher, Middleware {
 
 	/**

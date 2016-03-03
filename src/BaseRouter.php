@@ -16,31 +16,7 @@ namespace yolk\app;
  * A route is a regular expression that is used to match a URI to a handler,
  * bracketed groups are used to define the parameters that are passed to the handler.
  *
- * Handlers can be anything as they are interpreted by the client, 
- * however in most cases they will be a valid PHP callable:
- * * Class   - array('class_name', 'method')
- * * Object  - array($object, 'method')
- * * Object  - $object -- via __invoke()
- * * Closure - function()
- * Yolk Application instances can also use a simple string in the form
- * ClassName/method - the application will create the class passing in the
- * service container and then call "method".
- * 
- * Examples:
- * $router = new \yolk\app\Router();
- *
- * // Should create an instance of StaticController and call the 'about' method.
- * $router->addRoute('/about', 'StaticController/about');
- *
- * // Should call the static method 'about' on ProfileController class.
- * $router->addRoute('/users/(\d+)/profile', ['ProfileController', 'about']);
- *
- * // Closure callback
- * $router->addRoute('/articles/(\d+)', function( $id ) {
- *    $article_name = CMS::getArticleName($id);
- *    header("Location: /articles/{$article_name}"))
- * );
- *
+ * Handlers can be anything as they are interpreted by the client. 
  * Regexs are a good way of performing simple validation without have to instantiate the entire
  * application stack. In the example above any request for an article where the article id isn't
  * a numeric value won't match and will generate a 404 response.
