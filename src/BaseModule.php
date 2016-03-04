@@ -53,10 +53,18 @@ class BaseModule extends BaseDispatcher implements Module {
 	}
 
 	/**
-	 * Loads the routes used by the module.
+	 * Define the routes used by the module.
 	 * @return void
 	 */
 	protected function loadRoutes() {
+	}
+
+	public function getViewConfig() {
+		return [
+			'magnet' => $this->services['config']->get['paths']['app'] . '/vendor/gamernetwork/magnet/src/views',
+			// TODO allow attract to define its view path
+			'attract' => $this->services['config']->get['paths']['app'] . '/vendor/gamernetwork/attract/views'
+		];
 	}
 
 }

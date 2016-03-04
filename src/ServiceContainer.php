@@ -148,8 +148,10 @@ class ServiceContainer extends \Pimple\Container {
 
 		parent::offsetExists('profiler') && $view->setProfiler(parent::offsetGet('profiler'));
 
-		foreach( $this['context_manager'] as $k => $v ) {
-			$view->assign($k, $v);
+		if( parent::offsetExists('context_manager') ) {
+			foreach( parent::offsetGet('context_manager') as $k => $v ) {
+				$view->assign($k, $v);
+			}
 		}
 
 		return $view;
