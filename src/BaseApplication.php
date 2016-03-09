@@ -56,8 +56,9 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 	}
 
 	/**
-	 * Run the application.
-	 * return \yolk\app\Response
+	 * Shortcut to run the application in a typical CGI context
+	 *
+	 * @return \yolk\app\Response
 	 */
 	public function run() {
 		return $this(
@@ -65,6 +66,11 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 		);
 	}
 
+	/**
+	 * Figure out what to do with a request
+	 *
+	 * @return \yolk\app\Response
+	 */
 	public function dispatch( Request $request ) {
 		$response = parent::dispatch( $request );
 		if( $response !== false ) {
@@ -110,6 +116,9 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 
 	}
 
+	/**
+	 * Do any set up that needs an instantiated $this
+	 */
 	protected function init() {
 
 		$this->loadServices();
@@ -152,9 +161,9 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 	protected function loadServices() {
 		$this->services = new ServiceContainer();
 
-		// default Yolk service provider
-		// provides db connection manager, logging,
-		// view factories, etc
+		// default Yolk service provider provides db connection manager, logging,
+		// view factories, etc. You probably always do this unless you are
+		// having some micro-framework fun.
 		$this->services->register(
 			new \yolk\ServiceProvider()
 		);
@@ -190,11 +199,19 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 	 * This allows subclassed-Controllers to substitute in modules that assume base
 	 * classes are used. It's a sort of dynamic OO design that obviates the need for
 	 * empty stub controllers peppering the code.
+	 * 
+	 * @param  string $name The alias for this controller
+	 * @param  string $fq_class Fully qualified namespaced class name
+	 * @param  array  $opts Any further options used to initalise this controller
 	 * @return void
 	 */
-	protected function registerController( $name, $fq_class ) {
-		$this->services[$name] = function($c) use ($fq_class) {
-			return new $fq_class( $c );
+	protected function registerController( $name, $fq_class, $opts = [] ) {
+		$this->services[$name] = function($c) use ($fq_class, $opts) {
+			if( $opts ) {
+				return new $fq_class( $c, $opts );
+			} else {
+				return new $fq_class( $c );
+			}
 		};
 	}
 

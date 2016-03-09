@@ -132,32 +132,6 @@ class ServiceContainer extends \Pimple\Container {
 		return parent::offsetGet('log')->create($config);
 	}
 
-	protected function view( $name, Config $config ) {
-
-		if( !$config = $config->get("views.{$name}") )
-			throw new \LogicException("No configuration for view '{$name}'");
-
-		$view = parent::offsetGet('view')->create($config);
-
-		// used extensions are defined in the config file under the extensions option.
-		// we then use the view name/type as a prefix and ask the service container to
-		// provide an instance of the extension that we can inject...
-		foreach( Yolk::get($config, 'extensions', []) as $extension ) {
-			$view->addExtension($this["{$name}.{$extension}"]);
-		}
-
-		parent::offsetExists('profiler') && $view->setProfiler(parent::offsetGet('profiler'));
-
-		if( parent::offsetExists('context_manager') ) {
-			foreach( parent::offsetGet('context_manager') as $k => $v ) {
-				$view->assign($k, $v);
-			}
-		}
-
-		return $view;
-
-	}
-
 }
 
 // EOF

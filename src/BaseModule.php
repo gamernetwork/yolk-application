@@ -49,6 +49,23 @@ class BaseModule extends BaseDispatcher implements Module {
 		$this->loadRoutes();
 	}
 
+	/**
+	 * Return a view path for this module. The order is significant: views paths are searched
+	 * forwards
+	 *
+	 * @return array An array of 'namespace' => 'path' pairs
+	 */
+	public function buildViewConfig() {
+		return [
+			'magnet' => $this->services['config']->get('paths.app') . '/vendor/gamernetwork/magnet/src/views',
+			// TODO allow attract to define its view path
+			'attract' => $this->services['config']->get('paths.app') . '/vendor/gamernetwork/attract/views'
+		];
+	}
+
+	/**
+	 * Any set up tasks that depend on the object being instantiated.
+	 */
 	protected function init() {
 	}
 
@@ -57,15 +74,9 @@ class BaseModule extends BaseDispatcher implements Module {
 	 * @return void
 	 */
 	protected function loadRoutes() {
+		// $this->router->addRoute(...)
 	}
 
-	public function getViewConfig() {
-		return [
-			'magnet' => $this->services['config']->get['paths']['app'] . '/vendor/gamernetwork/magnet/src/views',
-			// TODO allow attract to define its view path
-			'attract' => $this->services['config']->get['paths']['app'] . '/vendor/gamernetwork/attract/views'
-		];
-	}
 
 }
 
