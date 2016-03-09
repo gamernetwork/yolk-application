@@ -28,7 +28,7 @@ abstract class BaseController implements Controller {
 	 */
 	protected $services;
 
-	protected $view_path;
+	protected $view_path = [];
 
 	/**
 	 * Make sure we store the dependency container.
@@ -89,7 +89,7 @@ abstract class BaseController implements Controller {
 			$config = $this->services['config']->get("views.{$view}");
 
 			// override view path with this controllers path settings (provided at construct time)
-			$config['view_path'] = $this->view_path;
+			$config['view_path'] = $config['view_path'] + $this->view_path;
 
 			$vobj = $this->services["view"]->create($config);
 

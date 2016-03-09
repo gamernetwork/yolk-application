@@ -215,6 +215,13 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 		};
 	}
 
+	/**
+	 * Register any controller aliases I may need
+	 */
+	protected function registerControllers() {
+		//
+	}
+
 	protected function injectProfiler( Response $response, Profiler $profiler = null ) {
 
 		if( !$profiler )
