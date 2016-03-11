@@ -122,6 +122,7 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 	protected function init() {
 
 		$this->loadServices();
+
 		$this->loadConfig();
 
 		$this->router = $this->services['router'];
@@ -129,6 +130,7 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 		$this->loadModules();
 
 		$this->registerControllers();
+
 		$this->loadRoutes();
 
 		// set up some middleware to handle flash messages,
@@ -150,6 +152,7 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 				return $response;
 			}
 		);
+
 	}
 
 	/**
@@ -159,6 +162,7 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 	 * @return void
 	 */
 	protected function loadServices() {
+
 		$this->services = new ServiceContainer();
 
 		// default Yolk service provider provides db connection manager, logging,
@@ -167,6 +171,7 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 		$this->services->register(
 			new \yolk\ServiceProvider()
 		);
+
 	}
 
 	/**
@@ -179,20 +184,23 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 
 	/**
 	 * Loads the routes used by the application.
+	 * e.g. $router->addRoute( '/articles/?$', '\\namespace\\controllers\\Controller::articles' );
 	 * @return void
 	 */
-	protected function loadRoutes() {
-		// e.g. $router->addRoute( '/articles/?$', '\\namespace\\controllers\\Controller::articles' );
-	}
+	abstract protected function loadRoutes();
 
 	/**
 	 * Here we set up a chain of modules which
 	 * are simply mini child applications to which we can dispatch requests
+	 * e.g. $this->modules['my-module'] = new \my\namespaced\Module( $this->services );
 	 * @return void
 	 */
-	protected function loadModules() {
-		// e.g. $this->modules['my-module'] = new \my\namespaced\Module( $this->services );
-	}
+	abstract protected function loadModules();
+
+	/**
+	 * Register any controller aliases I may need
+	 */
+	abstract protected function registerControllers();
 
 	/**
 	 * Alias a controller such that it can be called from the service by base name alone.
@@ -206,20 +214,9 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 	 * @return void
 	 */
 	protected function registerController( $name, $fq_class, $opts = [] ) {
-		$this->services[$name] = function($c) use ($fq_class, $opts) {
-			if( $opts ) {
-				return new $fq_class( $c, $opts );
-			} else {
-				return new $fq_class( $c );
-			}
+		$this->services[$name] = function( $c ) use ($fq_class, $opts) {
+			return new $fq_class( $c, $opts );
 		};
-	}
-
-	/**
-	 * Register any controller aliases I may need
-	 */
-	protected function registerControllers() {
-		//
 	}
 
 	protected function injectProfiler( Response $response, Profiler $profiler = null ) {

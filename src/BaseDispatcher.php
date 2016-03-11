@@ -94,6 +94,7 @@ abstract class BaseDispatcher implements Dispatcher, Middleware {
 	public function __invoke( Request $request, callable $next = null ) {
 
 		// not initialised yet so should probably do that
+		// TODO: bin init() and move contents to constructor
 		if( empty($this->services) )
 			$this->init();
 
@@ -155,9 +156,11 @@ abstract class BaseDispatcher implements Dispatcher, Middleware {
 				// we didn't handle it for whatever reasons so drop through!
 			}
 		}
+
 		// nothing handled this for whatever reason (no route or dispatcher matched,
 		// or the handlers decided to give up)
 		return false;
+
 	}
 
 	/**
@@ -192,17 +195,18 @@ abstract class BaseDispatcher implements Dispatcher, Middleware {
 				// (this is preferred way of doing it)
 				if( isset($this->services[$class]) ) {
 					$handler = [$this->services[$class], $method];
-
-				} else {
+				}
+				else {
 					// assume it's in the current application or module's namespace
 					$class = "{$this->namespace}\\controllers\\{$class}";
 					$handler = [new $class($this->services), $method];
 				}
-			} else {
+
+			}
+			else {
 				// FQ classname
 				$handler = [new $class($this->services), $method];
 			}
-
 
 		}
 

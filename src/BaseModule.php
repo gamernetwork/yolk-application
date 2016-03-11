@@ -23,7 +23,7 @@ use yolk\contracts\app\Response;
  * returned to the application.
  * Modules contain their own router instance, independant of the application.
  */
-class BaseModule extends BaseDispatcher implements Module {
+abstract class BaseModule extends BaseDispatcher implements Module {
 
 	/**
 	 * Location of the module class in the filesystem.
@@ -31,52 +31,27 @@ class BaseModule extends BaseDispatcher implements Module {
 	 */
 	protected $path;
 
-	/**
-	 * A service container instance.
-	 * @var \yolk\app\ServiceContainer
-	 */
-	protected $services;
-
 	public function __construct( ServiceContainer $services ) {
+
+		$this->services = $services;
+
+		$this->router = $services['router'];
 
 		$class = new \ReflectionClass($this);
 		$this->path      = pathinfo($class->getFileName(), PATHINFO_DIRNAME);
 		$this->namespace = $class->getNamespaceName();
 
-		$this->services = $services;
+		$this->middleware = [];
 
-		$this->router = $services['router'];
 		$this->loadRoutes();
-	}
 
-	/**
-	 * Return a view path for this module. The order is significant: views paths are searched
-	 * forwards
-	 *
-	 * @return array An array of 'namespace' => 'path' pairs
-	 */
-	public function buildViewConfig() {
-		return [
-			'magnet' => $this->services['config']->get('paths.app') . '/vendor/gamernetwork/magnet/src/views',
-			// TODO allow attract to define its view path
-			'attract' => $this->services['config']->get('paths.app') . '/vendor/gamernetwork/attract/views'
-		];
-	}
-
-	/**
-	 * Any set up tasks that depend on the object being instantiated.
-	 */
-	protected function init() {
 	}
 
 	/**
 	 * Define the routes used by the module.
 	 * @return void
 	 */
-	protected function loadRoutes() {
-		// $this->router->addRoute(...)
-	}
-
+	abstract protected function loadRoutes();
 
 }
 
