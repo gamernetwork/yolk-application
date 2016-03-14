@@ -52,16 +52,31 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 		parent::__construct();
 		$this->path = $path;
 		Yolk::setExceptionHandler([$this, 'error']);
+		$this->modules = [];
 	}
 
 	/**
-	 * Run the application.
-	 * return \yolk\app\Response
+	 * Shortcut to run the application in a typical CGI context
+	 *
+	 * @return \yolk\app\Response
 	 */
 	public function run() {
 		return $this(
 			BaseRequest::createFromGlobals()
 		);
+	}
+
+	/**
+	 * Figure out what to do with a request
+	 *
+	 * @return \yolk\app\Response
+	 */
+	public function dispatch( Request $request ) {
+		$response = parent::dispatch( $request );
+		if( $response !== false ) {
+			return $response;
+		}
+		throw new exceptions\NotFoundException();
 	}
 
 	/**
@@ -101,13 +116,25 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 
 	}
 
+	/**
+	 * Do any set up that needs an instantiated $this
+	 */
 	protected function init() {
 
 		$this->loadServices();
+
 		$this->loadConfig();
+
+		$this->router = $this->services['router'];
+
 		$this->loadModules();
+
+		$this->registerControllers();
+
 		$this->loadRoutes();
 
+		// set up some middleware to handle flash messages,
+		// do some profiling and set request prefix (if installed in folder)
 		$this->addMiddleware(
 			function( Request $request, callable $next = null ) {
 
@@ -123,23 +150,27 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 				$this->injectProfiler($response, $this->services['profiler']);
 
 				return $response;
-
 			}
 		);
 
 	}
 
 	/**
-	 * Loads the services used by the application.
+	 * Sets up the service container and loads the services
+	 * used by the application.
+	 *
 	 * @return void
 	 */
 	protected function loadServices() {
 
-		$container = new ServiceContainer();
+		$this->services = new ServiceContainer();
 
-		require "{$this->path}/app/services.php";
-
-		$this->services = $container;
+		// default Yolk service provider provides db connection manager, logging,
+		// view factories, etc. You probably always do this unless you are
+		// having some micro-framework fun.
+		$this->services->register(
+			new \yolk\ServiceProvider()
+		);
 
 	}
 
@@ -148,34 +179,44 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 	 * @return void
 	 */
 	protected function loadConfig() {
-
 		$this->services['config']->load("{$this->path}/config/main.php");
-
 	}
 
 	/**
 	 * Loads the routes used by the application.
+	 * e.g. $router->addRoute( '/articles/?$', '\\namespace\\controllers\\Controller::articles' );
 	 * @return void
 	 */
-	protected function loadRoutes() {
+	abstract protected function loadRoutes();
 
-		$router = $this->services['router'];
+	/**
+	 * Here we set up a chain of modules which
+	 * are simply mini child applications to which we can dispatch requests
+	 * e.g. $this->modules['my-module'] = new \my\namespaced\Module( $this->services );
+	 * @return void
+	 */
+	abstract protected function loadModules();
 
-		require "{$this->path}/app/routes.php";
+	/**
+	 * Register any controller aliases I may need
+	 */
+	abstract protected function registerControllers();
 
-		$this->router = $router;
-	}
-
-	protected function loadModules() {
-
-		$this->modules = [];
-
-		foreach( $this->services['config']->get('modules', []) as $name => $module ) {
-			list($package, $namespace) = $module;
-			$class = $namespace. '\\Module';
-			$this->modules[$name] = new $class($this->services);
-		}
-
+	/**
+	 * Alias a controller such that it can be called from the service by base name alone.
+	 * This allows subclassed-Controllers to substitute in modules that assume base
+	 * classes are used. It's a sort of dynamic OO design that obviates the need for
+	 * empty stub controllers peppering the code.
+	 * 
+	 * @param  string $name The alias for this controller
+	 * @param  string $fq_class Fully qualified namespaced class name
+	 * @param  array  $opts Any further options used to initalise this controller
+	 * @return void
+	 */
+	protected function registerController( $name, $fq_class, $opts = [] ) {
+		$this->services[$name] = function( $c ) use ($fq_class, $opts) {
+			return new $fq_class( $c, $opts );
+		};
 	}
 
 	protected function injectProfiler( Response $response, Profiler $profiler = null ) {
@@ -203,7 +244,6 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 		);
 
 		return $response;
-
 	}
 
 }

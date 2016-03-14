@@ -23,7 +23,7 @@ use yolk\contracts\app\Response;
  * returned to the application.
  * Modules contain their own router instance, independant of the application.
  */
-class BaseModule extends BaseDispatcher implements Module {
+abstract class BaseModule extends BaseDispatcher implements Module {
 
 	/**
 	 * Location of the module class in the filesystem.
@@ -31,42 +31,27 @@ class BaseModule extends BaseDispatcher implements Module {
 	 */
 	protected $path;
 
-	/**
-	 * A service container instance.
-	 * @var \yolk\app\ServiceContainer
-	 */
-	protected $services;
-
 	public function __construct( ServiceContainer $services ) {
+
+		$this->services = $services;
+
+		$this->router = $services['router'];
 
 		$class = new \ReflectionClass($this);
 		$this->path      = pathinfo($class->getFileName(), PATHINFO_DIRNAME);
 		$this->namespace = $class->getNamespaceName();
 
-		$this->services = $services;
+		$this->middleware = [];
 
 		$this->loadRoutes();
 
 	}
 
-	protected function init() {
-		
-	}
-
 	/**
-	 * Loads the routes used by the module.
-	 * By default routes are contained in the routes.php file located in the same
+	 * Define the routes used by the module.
 	 * @return void
 	 */
-	protected function loadRoutes() {
-
-		$router = $this->services['router'];
-
-		require "{$this->path}/routes.php";
-
-		$this->router = $router;
-
-	}
+	abstract protected function loadRoutes();
 
 }
 

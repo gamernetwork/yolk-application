@@ -28,12 +28,19 @@ abstract class BaseController implements Controller {
 	 */
 	protected $services;
 
+	protected $view_path = [];
+
 	/**
 	 * Make sure we store the dependency container.
 	 * @param ServiceContainer $services    services available to the controller.
 	 */
-	public function __construct( \yolk\app\ServiceContainer $services ) {
+	public function __construct( \yolk\app\ServiceContainer $services, $opts = [] ) {
 		$this->services = $services;
+
+		// we can set a view_path override per controller
+		if( isset( $opts['view_path'] ) ) {
+			$this->view_path = $opts['view_path'];
+		}
 	}
 
 	public function __before( NewRequest $request ) {
@@ -51,8 +58,12 @@ abstract class BaseController implements Controller {
 	 * @return \yolk\app\Response
 	 */
 	protected function respond( $body ) {
+		// get a nice fresh response from the factory
 		$response = $this->services['response'];
-		return $response->body($body);
+
+		// set response body (TODO: enough with the verbless methods)
+		$response->body($body);
+		return $response;
 	}
 
 	/**
@@ -72,11 +83,32 @@ abstract class BaseController implements Controller {
 		$context['STATIC_PATH'] = $this->services['config']->get('paths.static');
 
 		// if we weren't given a view instance then we should create one using the specified configuration
-		if( !($view instanceof View) )
-			$view = $this->services["view.{$view}"];
+		if( !($view instanceof View) ) {
+
+			// get view config defaults
+			$config = $this->services['config']->get("views.{$view}");
+
+			// override view path with this controllers path settings (provided at construct time)
+			$config['view_path'] = $config['view_path'] + $this->view_path;
+
+			$vobj = $this->services["view"]->create($config);
+
+			// used extensions are defined in the config file under the extensions option.
+			// we then use the view name/type as a prefix and ask the service container to
+			// provide an instance of the extension that we can inject...
+			foreach( \yolk\Yolk::get($config, 'extensions', []) as $extension ) {
+				$vobj->addExtension($this->services["{$view}.{$extension}"]);
+			}
+
+			// context manager contains stuff we want in globally available view context
+			$context_manager = $this->services['context_manager'];
+			foreach( $context_manager as $k => $v ) {
+				$vobj->assign($k, $v);
+			}
+		}
 
 		return $this->respond(
-			$view->render($template, $context)
+			$vobj->render($template, $context)
 		);
 
 	}
@@ -88,6 +120,7 @@ abstract class BaseController implements Controller {
 	 * @return \yolk\app\Response
 	 */
 	protected function respondJSON( $data ) {
+		// TODO use a serialiser than can cope a bit better
 		return $this->respond(json_encode($data))->header("Content-Type", "application/json");
 	}
 

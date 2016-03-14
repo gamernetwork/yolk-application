@@ -17,6 +17,36 @@ use yolk\contracts\app\Request;
 use yolk\contracts\app\Response;
 use yolk\contracts\app\Controller;
 
+/**
+ * A dispatcher is anything that accepts a request and tries to do something with it!
+ * Dispatchers will usually invoke a router in order to map URIs to actions.
+ *
+ * Use by subclassing, rather than directly.
+ *
+ * Actions can be a valid PHP callable:
+ *
+ * * Class   - array('class_name', 'method')
+ * * Object  - array($object, 'method')
+ * * Object  - $object -- via __invoke()
+ * * Closure - function()
+ *
+ * ...or a string representing a controller class and method the dispatcher will
+ * either look up in the controller registry (the service container) or
+ * instantiate a controller if existing one isn't found.
+ * 
+ * // Should create an instance of StaticController and call the 'about' method.
+ * $this->router->addRoute('/about', 'StaticController::about');
+ *
+ * // Should call the static method 'about' on ProfileController class.
+ * $this->router->addRoute('/users/(\d+)/profile', ['ProfileController', 'about']);
+ *
+ * // Closure callback
+ * $router->addRoute('/articles/(\d+)', function( $id ) {
+ *    $article_name = CMS::getArticleName($id);
+ *    header("Location: /articles/{$article_name}"))
+ * );
+ *
+ */
 abstract class BaseDispatcher implements Dispatcher, Middleware {
 
 	/**
@@ -64,6 +94,7 @@ abstract class BaseDispatcher implements Dispatcher, Middleware {
 	public function __invoke( Request $request, callable $next = null ) {
 
 		// not initialised yet so should probably do that
+		// TODO: bin init() and move contents to constructor
 		if( empty($this->services) )
 			$this->init();
 
@@ -87,38 +118,48 @@ abstract class BaseDispatcher implements Dispatcher, Middleware {
 	 */
 	public function dispatch( Request $request ) {
 
-		if( empty($this->router) )
-			throw new \Exception('asdasd');
+		foreach( $this->router->getRoutes() as $route ) {
 
-		$route = $this->router->match(
-			$request->uri(),
-			$request->method()
-		);
+			if( false !== $parameters = $this->router->test(
+				$route,
+				$request->uri(),
+				$request->method()
+			) ) {
 
-		// if we have a URI prefix specified in the route then add it to the stack
-		if( $prefix = isset($route['extra']['prefix']) ) {
-			// we can keep adding to URI prefix to allow more than one layer of delegation
-			$request->pushUriPrefix($route['extra']['prefix']);
+				// if we have a URI prefix specified in the route then add it to the stack
+				if( $prefix = isset($route['extra']['prefix']) ) {
+					// we can keep addig to URI prefix to allow more than one layer of delegation
+					$request->pushUriPrefix($route['extra']['prefix']);
+				}
+
+				// pass through extra info about the route
+				$request->extra($route['extra']);
+
+				// prepend the request to the parameter array
+				array_unshift($parameters, $request);
+
+				// make sure we have a callable handler
+				$handler = $this->makeHandler($route['handler']);
+
+				// execute the handler
+				$response = call_user_func_array($handler, $parameters);
+
+				// remove the URI prefix from earlier as that application has dealt with request
+				// and 'this' layer may well need to do further processing
+				if( $prefix )
+					$request->popUriPrefix();
+
+				if( $response !== false ) {
+					// we handled it bro
+					return $response;
+				}
+				// we didn't handle it for whatever reasons so drop through!
+			}
 		}
 
-		// pass through extra info about the route
-		$request->extra($route['extra']);
-
-		// prepend the request to the parameter array
-		array_unshift($route['parameters'], $request);
-
-		// make sure we have a callable handler
-		$handler = $this->makeHandler($route['handler']);
-
-		// execute the handler
-		$response = call_user_func_array($handler, $route['parameters']);
-
-		// remove the URI prefix from earlier as that application has dealt with request
-		// and 'this' layer may well need to do further processing
-		if( $prefix )
-			$request->popUriPrefix();
-
-		return $response;
+		// nothing handled this for whatever reason (no route or dispatcher matched,
+		// or the handlers decided to give up)
+		return false;
 
 	}
 
@@ -147,11 +188,25 @@ abstract class BaseDispatcher implements Dispatcher, Middleware {
 			list($class, $method) = explode('::', $handler);
 
 			// if $class begins with a namespace separator then assumes it's a fully qualified class name
-			// otherwise prefix it with the application's namespace
-			if( substr($class, 0, 1) != '\\' )
-				$class = "{$this->namespace}\\controllers\\{$class}";
+			// otherwise first check services for registered controllers...
+			if( substr($class, 0, 1) != '\\' ) {
 
-			$handler = [new $class($this->services), $method];
+				// do we have this controller registered in services?
+				// (this is preferred way of doing it)
+				if( isset($this->services[$class]) ) {
+					$handler = [$this->services[$class], $method];
+				}
+				else {
+					// assume it's in the current application or module's namespace
+					$class = "{$this->namespace}\\controllers\\{$class}";
+					$handler = [new $class($this->services), $method];
+				}
+
+			}
+			else {
+				// FQ classname
+				$handler = [new $class($this->services), $method];
+			}
 
 		}
 
