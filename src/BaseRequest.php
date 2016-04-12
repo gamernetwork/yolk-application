@@ -3,7 +3,7 @@
  * This file is part of Yolk - Gamer Network's PHP Framework.
  *
  * Copyright (c) 2015 Gamer Network Ltd.
- * 
+ *
  * Distributed under the MIT License, a copy of which is available in the
  * LICENSE file that was bundled with this package, or online at:
  * https://github.com/gamernetwork/yolk-application
@@ -91,7 +91,7 @@ class BaseRequest implements Request {
 	 * @var string
 	 */
 	protected $ip;
-	
+
 	/**
 	 * ISO 3166-1-alpha-2 country code of client IP address.
 	 * This is populated if the geoip extension is enabled.
@@ -111,6 +111,31 @@ class BaseRequest implements Request {
 	 */
 	protected $extra;
 
+	public static function createFromArgs($args) {
+
+		$args += [
+			'method'		=> 'GET',
+			'uri'			=> '/',
+			'options'		=> [],
+			'data'			=> [],
+			'cookies'		=> [],
+			'files'			=> [],
+			'headers'		=> [],
+			'environment'	=> []
+		];
+
+		return new static(
+			$args['method'],
+			$args['uri'],
+			$args['options'],
+			$args['data'],
+			$args['cookies'],
+			$args['files'],
+			$args['headers'],
+			$args['environment']
+		);
+	}
+
 	public static function createFromGlobals() {
 		return new static(
 			$_SERVER['REQUEST_METHOD'],
@@ -123,7 +148,7 @@ class BaseRequest implements Request {
 			RequestHelper::getEnvironment($_SERVER)
 		);
 	}
-	
+
 	/**
 	 * Construct a new request from the specified data.
 	 * @param string method        Usually $_GET superglobal.
@@ -136,9 +161,9 @@ class BaseRequest implements Request {
 	 * @param array  environment   Usually $_SERVER superglobal.
 	 */
 	public function __construct( $method, $uri, array $options, array $data, array $cookies, array $files, array $headers, array $environment ) {
-	
+
 		$this->method = strtoupper($method);
-		
+
 		if( isset($headers['x-http-method-override']) && $headers['x-http-method-override'] ) {
 			$this->method = $headers['x-http-method-override'];
 		}
@@ -310,7 +335,7 @@ class BaseRequest implements Request {
 			return Yolk::get($this->extra, $key, $default);
 		}
 	}
-	
+
 	public function messages() {
 		return $this->messages;
 	}
@@ -377,7 +402,7 @@ class BaseRequest implements Request {
 	protected function getIP() {
 
 		// TODO: make this better - very specific to our setup, i.e. varnish
-		
+
 		$ip        = $this->environment('REMOTE_ADDR');
 		$forwarded = $this->header('X-Forwarded-For');
 
