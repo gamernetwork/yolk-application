@@ -1,3 +1,6 @@
+---
+currentMenu: application
+---
 # Yolk Application
 
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/gamernetwork/yolk-application/badges/quality-score.png?b=develop)](https://scrutinizer-ci.com/g/gamernetwork/yolk-application/?branch=develop)
