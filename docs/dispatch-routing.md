@@ -1,4 +1,3 @@
-
 # Dispatch and Routing
 
 A `Dispatcher` accepts a `Request` and matches the request's uri against routes
@@ -32,10 +31,11 @@ class MyDisptacher extends BaseDispatcher {
 		$router->addRoute(
 
 			// first argument is the regular expression that uris must match
-			'/about$',
+			// bracketed expressions are passed to the handler as arguments in the order they appear
+			'/users/([0-9]+)/(edit|view|delete)$',
 
 			// second argument is a callable that accepts the request and generates a response
-			function( Request $request ) {
+			function( Request $request, $id, $action ) {
 				// generate and return a response
 			}
 
