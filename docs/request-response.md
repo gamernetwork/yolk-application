@@ -35,30 +35,76 @@ $request = new BaseRequest(
 
 The information held within a `Request` object can be accessed via various public methods.
 
-* `method()` - returns the request method
-* `uri()` - returns the request uri minus any defined prefixes
-* `fullURI()` - returns the actual uri requested
-* `queryString()` - returns the query string
-* `option()` - returns items from the query string, xss filtered by default
-* `data()` - returns items from the request body, xss filtered by default
-* `header()` - returns request headers
-* `cookie()` - returns request cookies
-* `file()` - returns uploaded files
-* `environment()` - returns environment settings - contents of $_SERVER that aren't already used elsewhere
-* `extra()` - returns "extra" information provided by the route/application
-* `messages()` - returns any "flash" messages passed via the YOLK_MESSAGES cookie
-* `ip()` - returns the IP address of the request
-* `authUser()` - returns the user name supplied by the request
-* `authPassword()` - returns the user password supplied by the request
-* `country()` - returns the country the request originated from (requires the function: geoip_country_code_by_name)
-* `continent()` - returns the country the request originated from (requires the function: geoip_continent_code_by_name)
-* `isBot()` - returns true if the request was likely made by a bot
-* `isAjax()` - returns true if the request is an XMLHttpRequest
-* `isSecure()` - returns true if the request was made over a secure connection (HTTPS)
-* `isGet()` - returns true if the request method was GET
-* `isPost()` - returns true if the request method was POST
-* `isPut()` - returns true if the request method was PUT
-* `isDelete()` - returns true if the request method was DELETE
+```php
+use yolk\app\BaseRequest;
+
+$request = BaseRequest::createFromGlobals();
+
+$request->method();			// Returns Request::METHOD_GET
+$request->fullURI();		// Returns the requested URI (excluding the query string)
+$request->queryString();	// Returns the full query string
+
+$request->option();			// returns an array containing all query string key/values
+$request->option('foo');	// returns the value of the query string parameter 'foo'
+							// second parameters specifies a default value
+
+$request->data();			// returns an array containing all POST body key/values
+$request->data('foo');		// returns the value of the POST parameter 'foo', or null
+							// second parameters specifies a default value
+
+// return an array of all items (name/value)
+$request->header();
+$request->cookie();
+$request->file();
+$request->environment();
+$request->extra();			// data supplied by the route/application
+
+// return the value of a specific item
+$request->header('content-type');
+$request->cookie('session_id');
+$request->file('avatar');
+$request->environment('SERVER_ADDR');
+$request->extra('foo');
+
+$request->ip();		// returns the IP address of the request
+
+// if the GeoIP extension is available the following methods will return correct values
+$request->country();	// returns the country the request originated from
+$request->continent();	// returns the continent the request originated from
+
+
+$request->isBot()		// returns true if the request was likely made by a bot
+$request->isAjax()		// returns true if the request is an XMLHttpRequest
+$request->isSecure()	// returns true if the request was made over a secure connection (HTTPS)
+$request->isGet()		// returns true if the request method is GET
+$request->isPost()		// returns true if the request method is POST
+$request->isPut()		// returns true if the request method is PUT
+$request->isDelete()	// returns true if the request method is DELETE
+```
+
+### Input Filtering
+
+Both `option()` and `data()` will filter the user supplied values for XSS vunerabilities.
+The following transformations are performed:
+* remove control characters
+* fix and decode entities (handles missing terminator)
+* normalise line endings (to `LF`)
+* remove any attributes starting with `on` or `xmlns`
+* remove `javascript:` and `vbscript:` protocols and `-moz-binding` CSS property
+* remove namespaced elements
+* remove `data` URIs
+* remove unwanted tags: `applet`, `base`, `bgsound`, `blink`, `body`, `embed`, `frame`,
+  `frameset`, `head`,`html`, `iframe`, `ilayer`, `layer`, `link`, `meta`, `object`,
+  `script`, `style`, `title`, `xml`
+
+### URIs
+
+Talk about prefixes
+
+### Authorisation
+
+If the request contains a HTTP Basic Auhthorisation header, the username and password
+will be available by calling the `authUser()` and `authPassword()` methods respectively.
 
 ## Response
 
@@ -87,9 +133,6 @@ $response
 	->body("<html><body><h1>Thing Not Found</h1></body></html>")
 	->setCharset('ISO-8859-1')
 
-	// set a "flash" message to be returned with the next request
-	->message('Hello World')
-
 	// send the complete response to the client
 	->send();
 ```
@@ -109,3 +152,25 @@ $response->redirect('/news');
 // permanent redirect (301)
 $response->redirect('/news', true);
 ```
+
+## "Flash" Messages
+
+A "flash" message is a message or piece of information passed from one request
+to another via a cookie.
+
+Messages are set on a response object and transmitted to the client as a cookie:
+
+```php
+// Args: $text, $type = 'info', $title = ''
+$response->message('Hello World');
+$response->message('Something bad happened', 'error', 'Ooops');
+```
+
+They can then be accessed on the following request:
+
+```php
+// returns an array of messages, each message being an array with key/values for text, type and title.
+$messages = $request->messages();
+```
+
+
