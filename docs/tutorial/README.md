@@ -10,11 +10,11 @@ implemented and how they can be enhanced and expanded.
   * Directory Structure
   * Composer
   * Entrypoints
-* [Application Class](application.md)
+* [Application Class](20-application.md)
  * Services
  * Configuration
  * Routes
-* [Controllers](controllers.md)
+* [Controllers](30-controllers.md)
  * Accessing a database
  * Validating user input
-* [Views](views.md)
+* [Views](40-views.md)
