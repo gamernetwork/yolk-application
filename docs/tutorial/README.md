@@ -6,8 +6,10 @@ implemented and how they can be enhanced and expanded.
 
 ## Contents
 
-* [Directory Structure](structure.md)
-* [Bootstrapping](bootstrap.md)
+* [Bootstrapping](10-bootstrap.md)
+  * Directory Structure
+  * Composer
+  * Entrypoints
 * [Application Class](application.md)
  * Services
  * Configuration
