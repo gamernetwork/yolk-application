@@ -108,8 +108,8 @@ public function loadRoutes() {
   $router->addRoute("/posts/([\d]+{4})/(.*)$", "BlogController::viewPost");
  
   $router->addRoute("/admin$", "AdminController::dashboard");
-  $router->addRoute("GET:/admin/new$", "AdminController::newPost");
-  $router->addRoute("POST:/admin/save$", "AdminController::savePost");
+  $router->addRoute("GET:/admin/edit/([\d]+)?$", "AdminController::newPost");
+  $router->addRoute("POST:/admin/save/([\d]+)?$", "AdminController::savePost");
 
   // make the Router available to the application
   $this->router = $router;
