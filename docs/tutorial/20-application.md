@@ -105,13 +105,8 @@ public function loadRoutes() {
 
   // define some routes
   $router->addRoute("/$", "BlogController::homepage");
-
   $router->addRoute("/posts/([\d]+{4})/(.*)$", "BlogController::viewPost");
-  $router->addRoute("/posts/([\d]+{4})$", "BlogController::yearArchive");
-  $router->addRoute("/posts/([\d]+{4})/([\d]+{,2})$", "BlogController::monthArchive");
-  $router->addRoute("/posts/([\d]+{4})/([\d]+{,2})/([\d]+{,2})$", "BlogController::dayArchive");
-  $router->addRoute("/posts/(.*)$", "BlogController::tagArchive");
-
+ 
   $router->addRoute("/admin$", "AdminController::dashboard");
   $router->addRoute("GET:/admin/new$", "AdminController::newPost");
   $router->addRoute("POST:/admin/save$", "AdminController::savePost");
