@@ -52,6 +52,10 @@ $config['app'] = [
 	'name'     => 'My First App',
 ];
 
+// this blocks defines the directory structure of the application
+// by changing the values here it's possible to relocate various
+// aspects of the application; for example, changing the tmp directory
+// to be /tmp/myapp which exists as an in-memory partition
 $config['paths'] = [
 
   // only used for app's that exist under a sub-directory on a domain
