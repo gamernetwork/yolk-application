@@ -18,3 +18,5 @@ implemented and how they can be enhanced and expanded.
  * Accessing a database
  * Validating user input
 * [Views](40-views.md)
+* [Middleware](50-middleware.md) 
+ * Authentication
