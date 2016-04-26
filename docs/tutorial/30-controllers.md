@@ -15,8 +15,8 @@ Based on the routes we defined in the [Application]('20-application.md') our
 namespace myapp\controllers;
 
 use yolk\contracts\app\Request;
-
-use yolk\application\BaseController;
+use yolk\app\BaseController;
+use yolk\app\exceptions\NotFoundException;
 
 class BlogController extends BaseController {
 
@@ -26,6 +26,8 @@ class BlogController extends BaseController {
 
 		parent::__construct($services);
 
+		// we get the main database connection and store it in a class property
+		// for ease of access
 		$this->db = $services['db.main'];
 
 	}
@@ -51,6 +53,8 @@ class BlogController extends BaseController {
 		return $this->respondView(
 			'homepage',
 			[
+				// passing the request to the view is usually required
+				// so the view has access to the current uri, request data, etc
 				'request' => $request,
 				'posts'   => $posts,
 			]
@@ -76,14 +80,16 @@ class BlogController extends BaseController {
 			->whereRaw("YEAR(published) = :year", ['year' => (int) $year])
 			->fetchRow();
 
+		// if the post can't be found we throw a NotFoundException
+		// the application will then convert that into a "404 Not Found" response
 		if( empty($post) )
 			throw new NotFoundException("Post Not Found: {$year}/{$slug}");
 
 		return $this->respondView(
 			'view-post',
 			[
-			  'request' => $request,
-				'post' => $post,
+				'request' => $request,
+				'post'    => $post,
 			]
 		);
 
@@ -98,19 +104,16 @@ The admin controller for listing and editing posts might look like:
 namespace myapp\controllers;
 
 use yolk\contracts\app\Request;
-
-use yolk\application\BaseController;
+use yolk\app\BaseController;
+use yolk\app\exceptions\NotFoundException;
 
 class AdminController extends BaseController {
 
 	protected $db;
 
 	public function __construct( ServiceContainer $services ) {
-
 		parent::__construct($services);
-
 		$this->db = $services['db.main'];
-
 	}
 
 	/**
@@ -120,12 +123,16 @@ class AdminController extends BaseController {
 	 */
 	public function dashboard( Request $request ) {
 
+		// a page number can be passed via the query string
+		// we convert it to an integer and ensure the minimum
+		// value is 1
 		$page = max(1, (int) $request->option('page', 1));
 
+		// fetch the items for the requested page
 		$posts = $this->db
 			->select()
 			->cols('*')
-			->from('blog')
+			->from('posts')
 			->orderBy('published', false)
 			->offset(($page - 1) * 10)
 			->limit(10)
@@ -149,22 +156,22 @@ class AdminController extends BaseController {
 	 */
 	public function editPost( Request $request, $id = 0 ) {
 
-    // no id so we're creating a new one
-    if( empty($id)) {
-      $post = [];
-    }
-    // fetch the requested blog post
-    else {
-  		$post = $this->db
-  			->select()
-  			->cols('*')
-  			->from('blog')
-  			->where('id', id)
-  			->fetchRow();
+		// no id so we're creating a new one
+		if( empty($id)) {
+			$post = [];
+		}
+		// fetch the requested blog post
+		else {
+			$post = $this->db
+				->select()
+				->cols('*')
+				->from('posts')
+				->where('id', id)
+				->fetchRow();
 
-  		if( empty($post) )
-  			throw new NotFoundException("Post Not Found: {$year}/{$slug}");
-    }
+		if( empty($post) )
+			throw new NotFoundException("Post Not Found: {$year}/{$slug}");
+		}
 
 		return $this->respondView(
 			'admin/edit-post',
@@ -181,14 +188,52 @@ class AdminController extends BaseController {
 	 * @param  Request $request The incoming request to process
 	 * @return Response
 	 */
-	public function savePost( Request $request ) {
+	public function savePost( Request $request, $id = 0 ) {
 
-		$data = $request->data();
+		// we define a Fieldset to describe the edit form structure
+		$fieldset = new Fieldset();
+		$fieldset->add('title',     Type::TEXT, ['required' => true]);
+		$fieldset->add('slug',      Type::TEXT, ['required' => true]);
+		$fieldset->add('body',      Type::TEXT, ['required' => true]);
 
-		// define fieldset
-		// validate data against fieldset
-		// insert/update db if valid
-		// return json response
+		// grab the request data and fill in any missing values with empty strings
+		$data = $request->data() + array_fill_keys($fieldset->listNames(), '');
+
+		// validate the data against the defined Fieldset
+		list($post, $errors) = $fieldset->validate($data);
+
+		// there's been errors so let's return them as a JSON response
+		if( !empty($errors) ) {
+			return $this->respondJSON([
+				'success' => false,
+				'errors'  => $errors,
+			]);
+		}
+
+		// no id so it's a new post
+		if( empty($id) ) {
+			$this->db
+				->insert()
+				->into('posts')
+				->item($data)
+				->execute();
+			$id = $this->db->insertId();
+		}
+		// existing post so update
+		else {
+			$this->db
+				->update()
+				->table('posts')
+				->set($data)
+				->where('id', $id)
+				->execute();
+		}
+
+		// return some json indicating a successful operation and the post id
+		return $this->respondJSON([
+			'success' => true,
+			'id'      => $id,
+		])
 
 	}
 
