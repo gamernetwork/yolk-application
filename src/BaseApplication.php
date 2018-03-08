@@ -80,8 +80,12 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 			$response = $this->dispatch($request);
 
 			// if request contains flash messages and the response doesn't then we need to remove them
-			if( $request->messages() && !$response->cookie('YOLK_MESSAGES') )
+			$messages_shown = $request->messages() && !$response->cookie('YOLK_MESSAGES');
+			// if the YOLK_MESSAGES cookie is a serialized empty array, we should unset it
+			$messages_empty = $response->cookie('YOLK_MESSAGES') == "YTowOnt9";
+			if( $messages_shown || $messages_empty ) {
 				$response->cookie('YOLK_MESSAGES', '', time() - 60);
+			}
 
 			// TODO: this should be inverted by injecting the profiler into the response object in services.php
 			$this->injectProfiler($response, $this->services['profiler']);

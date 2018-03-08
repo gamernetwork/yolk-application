@@ -235,7 +235,7 @@ class BaseResponse implements Response {
 		}
 
 		// messages cookie
-		if( isset($this->messages) ) {
+		if( isset($this->messages) && !empty($this->messages) ) {
 			setcookie('YOLK_MESSAGES', base64_encode(serialize($this->messages)), 0, '/');
 			unset($this->cookies['YOLK_MESSAGES']);
 		}
