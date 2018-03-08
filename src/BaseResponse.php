@@ -236,14 +236,15 @@ class BaseResponse implements Response {
 
 		// messages cookie
 		if( isset($this->messages) && !empty($this->messages) ) {
-			setcookie('YOLK_MESSAGES', base64_encode(serialize($this->messages)), 0, '/');
+			$this->cookie('YOLK_MESSAGES', base64_encode(serialize($this->messages)), 0);
 			unset($this->cookies['YOLK_MESSAGES']);
 		}
 		else {
 			$existing = array_key_exists('YOLK_MESSAGES', $_COOKIE) 
 				? $_COOKIE['YOLK_MESSAGES'] : null;
 			// if the YOLK_MESSAGES cookie is a serialized empty array, we should unset it
-			$existing_cookie_empty = $existing == "YTowOnt9";
+            $serialized_empty_array = base64_encode(serialize([]));
+			$existing_cookie_empty = $existing == $serialized_empty_array;
 			if( $existing_cookie_empty ) {
 				$this->cookie('YOLK_MESSAGES', '', time() - 60);
 			}
