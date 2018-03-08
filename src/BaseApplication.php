@@ -18,7 +18,6 @@ use yolk\contracts\app\Dispatcher;
 use yolk\contracts\app\Request;
 use yolk\contracts\app\Response;
 use yolk\contracts\profiler\Profiler;
-die();
 
 /**
  * Application is basically a front controller class that acts as a "root object".
