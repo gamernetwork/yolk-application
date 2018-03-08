@@ -18,6 +18,7 @@ use yolk\contracts\app\Dispatcher;
 use yolk\contracts\app\Request;
 use yolk\contracts\app\Response;
 use yolk\contracts\profiler\Profiler;
+die();
 
 /**
  * Application is basically a front controller class that acts as a "root object".
@@ -80,12 +81,8 @@ abstract class BaseApplication extends BaseDispatcher implements Application {
 			$response = $this->dispatch($request);
 
 			// if request contains flash messages and the response doesn't then we need to remove them
-			$messages_shown = $request->messages() && !$response->cookie('YOLK_MESSAGES');
-			// if the YOLK_MESSAGES cookie is a serialized empty array, we should unset it
-			$messages_empty = $response->cookie('YOLK_MESSAGES') == "YTowOnt9";
-			if( $messages_shown || $messages_empty ) {
+			if( $request->messages() && !$response->cookie('YOLK_MESSAGES') )
 				$response->cookie('YOLK_MESSAGES', '', time() - 60);
-			}
 
 			// TODO: this should be inverted by injecting the profiler into the response object in services.php
 			$this->injectProfiler($response, $this->services['profiler']);
